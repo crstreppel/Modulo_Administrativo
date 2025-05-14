@@ -1,33 +1,38 @@
-// backend/scripts/popular_tab_status.js
-
-const sequelize = require('../config/db');
+const { sequelize } = require('../config/db');
 const Status = require('../models/Status');
 
 async function popularStatus() {
   try {
-    await sequelize.sync(); // sincroniza modelos com o banco
+    // 1. Autentica e sincroniza apenas o model Status
+    await sequelize.authenticate();
+    console.log('✅ Conexão com o banco estabelecida.');
 
-    const dadosIniciais = ['ATIVO', 'INATIVO', 'ABERTO', 'LIQUIDADO'];
+    // Usa alter: true para ajustar a tabela sem dropar dados
+    await Status.sync({ alter: true }); 
 
-    for (const descricao of dadosIniciais) {
-      const [registro, criado] = await Status.findOrCreate({
-        where: { descricao }
+    // 2. Dados iniciais (compatíveis com seu model)
+    const statuses = [
+      { id: 1, descricao: 'ATIVO' },
+      { id: 2, descricao: 'INATIVO' },
+      { id: 3, descricao: 'ABERTO' },
+      { id: 4, descricao: 'LIQUIDADO' }
+    ];
+
+    // 3. Upsert (insere ou atualiza se o ID já existir)
+    for (const status of statuses) {
+      await Status.findOrCreate({
+        where: { id: status.id }, // Busca pelo ID para evitar duplicatas
+        defaults: status
       });
-
-      if (criado) {
-        console.log(`Status "${descricao}" inserido.`);
-      } else {
-        console.log(`Status "${descricao}" já existe.`);
-      }
+      console.log(`✔ Status "${status.descricao}" (ID: ${status.id}) processado.`);
     }
 
-    console.log('Tabela status populada com sucesso!');
+    console.log('🎉 Tabela Status populada com sucesso!');
+    return true;
   } catch (error) {
-    console.error('Erro ao popular tabela status:', error);
-  } finally {
-    // ⚠️ Só feche a conexão se tiver certeza de que não será usada depois
-    await sequelize.close(); // ok neste caso por ser um script isolado
+    console.error('❌ Erro:', error.message);
+    throw error;
   }
 }
 
-popularStatus();
+module.exports = popularStatus;
