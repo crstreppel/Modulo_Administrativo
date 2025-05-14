@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Consulta de Status</title>
+  <link rel="stylesheet" href="../css/global.css">
+  <link rel="stylesheet" href="css/con_status.css">
+</head>
+<body>
+  <div class="container">
+    <h1>Consulta de Status</h1>
+
+    <input type="text" id="filtroDescricao" placeholder="Filtrar por descrição">
+    <select id="listaStatus" size="5"></select>
+
+    <div id="detalhesStatus" style="display: none;">
+      <h3>Detalhes do Status</h3>
+      <input type="text" id="descricaoEdit" />
+      <button onclick="editarStatus()">Salvar Alterações</button>
+      <button onclick="excluirStatus()">Excluir</button>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  <script src="../js/utils.js"></script>
+  <script src="js/con_status.js"></script>
+</body>
+</html>

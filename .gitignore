@@ -1,0 +1,131 @@
+# --- 🚀 .gitignore ULTRA MEGA HIPER COMPLETO ---
+# (Para projetos em qualquer linguagem + extras)
+
+### 👩‍💻 Linguagens & Frameworks ###
+# Python
+__pycache__/
+*.py[cod]
+*.so
+.Python
+venv/
+env/
+pip-log.txt
+
+# Node/JavaScript
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+dist/
+.next/
+.nuxt/
+
+# Java
+*.class
+*.jar
+*.war
+*.ear
+.gradle/
+build/
+
+# C/C++
+*.o
+*.a
+*.so
+*.out
+*.exe
+
+# Ruby
+/.bundle
+/vendor/bundle
+*.gem
+
+# Go
+/bin/
+/pkg/
+
+### 🛠️ Ferramentas & IDEs ###
+# VS Code
+.vscode/
+!.vscode/settings.json
+!.vscode/tasks.json
+
+# IntelliJ
+.idea/
+*.iml
+*.iws
+
+# Eclipse
+.settings/
+.project
+.classpath
+*.launch
+
+### 🐋 Docker & Containers ###
+docker-compose*.yml
+**/docker-data/
+**/.env
+
+### 📦 Sistemas Operacionais ###
+# macOS
+.DS_Store
+._*
+.Spotlight-V100
+.Trashes
+
+# Windows
+Thumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Linux
+*~
+
+### 📂 Pastas Genéricas ###
+/logs/
+/tmp/
+/temp/
+*.tmp
+*.bak
+*.swp
+
+### 🔒 Variáveis de Ambiente ###
+.env
+.env.local
+.env*.local
+secrets.ini
+credentials.json
+
+### 🚀 Builds & Deploy ###
+/dist/
+/build/
+/out/
+/.next/
+/.nuxt/
+/.cache/
+*.exe
+*.dll
+*.msi
+
+### 📚 Documentação Gerada ###
+/docs/_build/
+/site/
+/coverage/
+
+### 🎨 Assets Comprimidos ###
+*.min.js
+*.min.css
+*.svgz
+*.br
+*.gz
+
+### � EXTRA: Projetos Específicos ###
+# Android
+/android/local.properties
+/android/build/
+
+# iOS
+/Pods/
+*.xcworkspace
+!default.xcworkspace
