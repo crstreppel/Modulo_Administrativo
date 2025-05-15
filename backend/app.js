@@ -21,7 +21,7 @@ app.get('/', (req, res) => {
 // Rotas
 app.use('/api/status', statusRoutes);
 app.use('/api/servicos', servicosRoutes);
-app.use('./api/racas', racasRoutes)
+app.use('/api/racas', racasRoutes)
 
 // Inicializa o servidor
 const PORT = 3000;
