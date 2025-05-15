@@ -3,7 +3,7 @@ const cors = require('cors');
 const { sequelize } = require('./config/db');
 const statusRoutes = require('./routes/statusRoutes');
 const servicosRoutes = require('./routes/servicosRoutes');
-
+const racasRoutes = require('./routes/racasRoutes');
 const app = express();
 
 // Importa as associações entre os models (MUITO IMPORTANTE!)
@@ -21,6 +21,7 @@ app.get('/', (req, res) => {
 // Rotas
 app.use('/api/status', statusRoutes);
 app.use('/api/servicos', servicosRoutes);
+app.use('./api/racas', racasRoutes)
 
 // Inicializa o servidor
 const PORT = 3000;
