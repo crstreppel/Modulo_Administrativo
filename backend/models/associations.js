@@ -1,6 +1,7 @@
 const Servicos = require('./Servicos');
 const Status = require('./Status');
 const Racas = require('./Racas');
+const Clientes = require('./Clientes');
 
 // Serviço pertence a um Status
 Servicos.belongsTo(Status, {
@@ -26,8 +27,21 @@ Status.hasMany(Racas, {
   as: 'racas',
 });
 
+// Cliente pertence a um Status
+Clientes.belongsTo(Status, {
+  foreignKey: 'statusId',
+  as: 'status',
+});
+
+// Um Status pode ter muitos Clientes
+Status.hasMany(Clientes, {
+  foreignKey: 'statusId',
+  as: 'clientes',
+});
+
 module.exports = {
   Servicos,
   Status,
   Racas,
+  Clientes,
 };

@@ -50,3 +50,34 @@ async function carregarServicosSelect(selectId) {
     console.error("Erro ao carregar serviços:", error);
   }
 }
+
+// Consulta todos os clientes da API
+async function consultarClientes() {
+  try {
+    const response = await axios.get("http://localhost:3000/api/clientes");
+    return response.data;
+  } catch (error) {
+    console.error("Erro ao consultar clientes:", error);
+    return [];
+  }
+}
+
+// Carrega os status em um <select> com seletor passado por parâmetro
+async function carregarStatusSelect(selectId) {
+  const select = document.querySelector(selectId);
+  if (!select) return;
+
+  try {
+    const statusList = await consultarStatus();
+    select.innerHTML = ""; // limpa o select
+
+    statusList.forEach(status => {
+      const option = document.createElement("option");
+      option.value = status.id;
+      option.textContent = status.descricao;
+      select.appendChild(option);
+    });
+  } catch (error) {
+    console.error("Erro ao carregar status no select:", error);
+  }
+}

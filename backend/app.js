@@ -4,6 +4,8 @@ const { sequelize } = require('./config/db');
 const statusRoutes = require('./routes/statusRoutes');
 const servicosRoutes = require('./routes/servicosRoutes');
 const racasRoutes = require('./routes/racasRoutes');
+const clientesRoutes = require('./routes/clientesRoutes'); // <-- Adicionado
+
 const app = express();
 
 // Importa as associações entre os models (MUITO IMPORTANTE!)
@@ -21,13 +23,14 @@ app.get('/', (req, res) => {
 // Rotas
 app.use('/api/status', statusRoutes);
 app.use('/api/servicos', servicosRoutes);
-app.use('/api/racas', racasRoutes)
+app.use('/api/racas', racasRoutes);
+app.use('/api/clientes', clientesRoutes); // <-- Adicionado
 
 // Inicializa o servidor
 const PORT = 3000;
 app.listen(PORT, async () => {
   try {
-    await sequelize.sync({ force: true })
+    await sequelize.sync({ force: true });
     console.log(`Servidor rodando em http://localhost:${PORT}`);
   } catch (error) {
     console.error('Erro ao sincronizar com o banco:', error);
