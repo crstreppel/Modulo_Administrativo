@@ -3,20 +3,17 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Cadastro de Raças</title>
+  <title>Cadastro de Espécies</title>
   <link rel="stylesheet" href="../css/global.css" />
-  <link rel="stylesheet" href="css/cad_racas.css" />
+  <link rel="stylesheet" href="css/cad_especie.css" />
 </head>
 <body>
   <div class="container">
-    <h1>Cadastro de Raças</h1>
+    <h1>Cadastro de Espécies</h1>
 
-    <form id="form-raca">
-      <label for="descricao">Descrição da Raça:</label>
+    <form id="form-especie">
+      <label for="descricao">Descrição da Espécie:</label>
       <input type="text" id="descricao" name="descricao" required />
-
-      <label for="especie">Espécie:</label>
-      <select id="especie" name="especie" required></select>
 
       <label for="status">Status:</label>
       <select id="status" name="status" required></select>
@@ -24,11 +21,11 @@
       <button type="submit">Cadastrar</button>
     </form>
 
-    <div id="raca-cadastrada"></div>
+    <div id="especie-cadastrada"></div>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
   <script src="../js/utils.js"></script>
-  <script src="js/cad_racas.js"></script>
+  <script src="js/cad_especie.js"></script>
 </body>
 </html>

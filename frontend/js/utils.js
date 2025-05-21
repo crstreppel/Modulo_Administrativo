@@ -1,5 +1,3 @@
-// frontend/js/utils.js
-
 // Consulta todos os status da API
 async function consultarStatus() {
   try {
@@ -7,6 +5,18 @@ async function consultarStatus() {
     return response.data;
   } catch (error) {
     console.error('Erro ao consultar status:', error);
+    return [];
+  }
+}
+
+// Consulta todas as espécies da API
+async function consultarEspecies() {
+  try {
+    const response = await axios.get('http://localhost:3000/api/especies');
+    return response.data;
+  } catch (error) {
+    console.error('Erro ao listar espécies:', error);
+    console.error('Erro ao consultar espécies:', error);
     return [];
   }
 }
@@ -79,5 +89,25 @@ async function carregarStatusSelect(selectId) {
     });
   } catch (error) {
     console.error("Erro ao carregar status no select:", error);
+  }
+}
+
+// Carrega as espécies no select com id "especie"
+async function carregarEspecies() {
+  const select = document.getElementById("especie");
+  if (!select) return;
+
+  try {
+    const especies = await consultarEspecies();
+    select.innerHTML = "";
+
+    especies.forEach(especie => {
+      const option = document.createElement("option");
+      option.value = especie.id;
+      option.textContent = especie.descricao;
+      select.appendChild(option);
+    });
+  } catch (error) {
+    console.error("Erro ao carregar espécies:", error);
   }
 }

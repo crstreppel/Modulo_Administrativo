@@ -1,9 +1,13 @@
-const Servicos = require('./Servicos');
-const Status = require('./Status');
-const Racas = require('./Racas');
-const Clientes = require('./Clientes');
+const Servicos  = require('./Servicos');
+const Status    = require('./Status');
+const Racas     = require('./Racas');
+const Clientes  = require('./Clientes');
+const Especie   = require('./Especie');   // <-- novo
 
-// Serviço pertence a um Status
+/* ------------------------------------------------------------------
+ * RELACIONAMENTOS COM STATUS
+ * ----------------------------------------------------------------*/
+ // Serviço pertence a um Status
 Servicos.belongsTo(Status, {
   foreignKey: 'statusId',
   as: 'status',
@@ -39,9 +43,40 @@ Status.hasMany(Clientes, {
   as: 'clientes',
 });
 
+// Especie pertence a um Status
+Especie.belongsTo(Status, {
+  foreignKey: 'statusId',
+  as: 'status',
+});
+
+// Um Status pode ter muitas Especies
+Status.hasMany(Especie, {
+  foreignKey: 'statusId',
+  as: 'especies',
+});
+
+/* ------------------------------------------------------------------
+ * RELACIONAMENTO ESPECIE ↔ RAÇAS
+ * ----------------------------------------------------------------*/
+// Uma Raça pertence a uma Espécie
+Racas.belongsTo(Especie, {
+  foreignKey: 'especieId',
+  as: 'especie',
+});
+
+// Uma Espécie pode ter muitas Raças
+Especie.hasMany(Racas, {
+  foreignKey: 'especieId',
+  as: 'racas',
+});
+
+/* ------------------------------------------------------------------
+ * EXPORTS
+ * ----------------------------------------------------------------*/
 module.exports = {
   Servicos,
   Status,
   Racas,
   Clientes,
+  Especie,   // <-- novo
 };

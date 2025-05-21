@@ -1,9 +1,8 @@
 const { DataTypes } = require('sequelize');
 const { sequelize } = require('../config/db');
 const Status = require('./Status');
-const Especie = require('./Especie');
 
-const Racas = sequelize.define('Racas', {
+const Especie = sequelize.define('Especie', {
   id: {
     type: DataTypes.INTEGER,
     primaryKey: true,
@@ -20,19 +19,11 @@ const Racas = sequelize.define('Racas', {
       model: Status,
       key: 'id',
     }
-  },
-  especieId: {
-    type: DataTypes.INTEGER,
-    allowNull: false,
-    references: {
-      model: Especie,
-      key: 'id',
-    }
   }
 }, {
-  tableName: 'racas',
+  tableName: 'especie',
   timestamps: true,
   paranoid: true,
 });
 
-module.exports = Racas;
+module.exports = Especie;

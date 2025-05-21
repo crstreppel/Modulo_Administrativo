@@ -4,7 +4,8 @@ const { sequelize } = require('./config/db');
 const statusRoutes = require('./routes/statusRoutes');
 const servicosRoutes = require('./routes/servicosRoutes');
 const racasRoutes = require('./routes/racasRoutes');
-const clientesRoutes = require('./routes/clientesRoutes'); // <-- Adicionado
+const clientesRoutes = require('./routes/clientesRoutes');
+const especieRoutes = require('./routes/especieRoutes'); // <-- Adicionado
 
 const app = express();
 
@@ -24,7 +25,8 @@ app.get('/', (req, res) => {
 app.use('/api/status', statusRoutes);
 app.use('/api/servicos', servicosRoutes);
 app.use('/api/racas', racasRoutes);
-app.use('/api/clientes', clientesRoutes); // <-- Adicionado
+app.use('/api/clientes', clientesRoutes);
+app.use('/api/especies', especieRoutes); // <-- Adicionado
 
 // Inicializa o servidor
 const PORT = 3000;

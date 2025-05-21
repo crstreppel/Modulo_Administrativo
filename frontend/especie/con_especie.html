@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Consulta de Espécies</title>
+  <link rel="stylesheet" href="../css/global.css">
+  <link rel="stylesheet" href="css/con_especie.css">
+</head>
+<body>
+  <div class="container">
+    <h1>Consulta de Espécies</h1>
+
+    <input type="text" id="filtroDescricao" placeholder="Filtrar por descrição">
+    <select id="listaEspecies" size="5"></select>
+
+    <div id="detalhesEspecie" style="display: none;">
+      <h3>Detalhes da Espécie</h3>
+      <input type="text" id="descricaoEdit" />
+      <select id="statusEdit"></select>
+      <button onclick="editarEspecie()">Salvar Alterações</button>
+      <button onclick="excluirEspecie()">Excluir</button>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  <script src="../js/utils.js"></script>
+  <script src="js/con_especie.js"></script>
+</body>
+</html>

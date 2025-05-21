@@ -89,6 +89,7 @@ $RECYCLE.BIN/
 *.tmp
 *.bak
 *.swp
+*.txt
 
 ### 🔒 Variáveis de Ambiente ###
 .env
