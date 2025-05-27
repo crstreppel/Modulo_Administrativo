@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cadastro de Meio de Pagamento</title>
+  <link rel="stylesheet" href="../css/global.css">
+  <link rel="stylesheet" href="css/cad_meioDePagamento.css">
+</head>
+<body>
+  <div class="container">
+    <h1>Cadastro de Meio de Pagamento</h1>
+    <form id="form-meioDePagamento">
+      <label for="descricao">Descrição:</label>
+      <input type="text" id="descricao" name="descricao" required>
+
+      <label for="status">Status:</label>
+      <select id="status" name="status" required></select>
+
+      <button type="submit">Cadastrar</button>
+    </form>
+
+    <div id="meio-pagamento-cadastrado"></div> <!-- Exibição do registro inserido -->
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  <script src="../js/utils.js"></script>
+  <script src="js/cad_meioDePagamento.js"></script>
+</body>
+</html>

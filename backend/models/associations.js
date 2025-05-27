@@ -4,6 +4,7 @@ const Racas     = require('./Racas');
 const Clientes  = require('./Clientes');
 const Especie   = require('./Especie');
 const CondicaoDePagamento = require('./CondicaoDePagamento'); // <-- novo
+const Meio_de_pagamento = require('./Meio_de_pagamento'); // <-- novo
 
 /* ------------------------------------------------------------------
  * RELACIONAMENTOS COM STATUS
@@ -58,6 +59,16 @@ Status.hasMany(CondicaoDePagamento, {
   as: 'condicoesDePagamento',
 });
 
+// Meio_de_pagamento pertence a um Status
+Meio_de_pagamento.belongsTo(Status, {
+  foreignKey: 'statusId',
+  as: 'status',
+});
+Status.hasMany(Meio_de_pagamento, {
+  foreignKey: 'statusId',
+  as: 'meiosDePagamento',
+});
+
 /* ------------------------------------------------------------------
  * RELACIONAMENTO ESPECIE ↔ RAÇAS
  * ----------------------------------------------------------------*/
@@ -80,5 +91,6 @@ module.exports = {
   Racas,
   Clientes,
   Especie,
-  CondicaoDePagamento, // <-- novo
+  CondicaoDePagamento,
+  Meio_de_pagamento, // <-- novo
 };

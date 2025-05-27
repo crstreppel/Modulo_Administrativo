@@ -8,6 +8,7 @@ const racasRoutes = require('./routes/racasRoutes');
 const clientesRoutes = require('./routes/clientesRoutes');
 const especieRoutes = require('./routes/especieRoutes'); 
 const condicaoDePagamentoRoutes = require('./routes/condicaoDePagamentoRoutes'); // <-- Novo
+const meioDePagamentoRoutes = require('./routes/meioDePagamentoRoutes'); // <-- Novo
 
 const app = express();
 
@@ -30,6 +31,7 @@ app.use('/api/racas', racasRoutes);
 app.use('/api/clientes', clientesRoutes);
 app.use('/api/especies', especieRoutes); 
 app.use('/api/condicoes-de-pagamento', condicaoDePagamentoRoutes); // <-- Novo
+app.use('/api/meios-de-pagamento', meioDePagamentoRoutes); // <-- Novo
 
 // Inicializa o servidor
 const PORT = 3000;
