@@ -15,8 +15,29 @@ async function consultarEspecies() {
     const response = await axios.get('http://localhost:3000/api/especies');
     return response.data;
   } catch (error) {
-    console.error('Erro ao listar espécies:', error);
     console.error('Erro ao consultar espécies:', error);
+    return [];
+  }
+}
+
+// Consulta todas as raças com base na espécie
+async function consultarRacasPorEspecie(especieId) {
+  try {
+    const response = await axios.get(`http://localhost:3000/api/racas?especieId=${especieId}`);
+    return response.data;
+  } catch (error) {
+    console.error("Erro ao consultar raças por espécie:", error);
+    return [];
+  }
+}
+
+// Consulta todos os clientes da API
+async function consultarClientes() {
+  try {
+    const response = await axios.get("http://localhost:3000/api/clientes");
+    return response.data;
+  } catch (error) {
+    console.error("Erro ao consultar clientes:", error);
     return [];
   }
 }
@@ -41,37 +62,6 @@ async function carregarStatus() {
   }
 }
 
-// Carrega serviços em um select passando o seletor do select como argumento
-async function carregarServicosSelect(selectId) {
-  try {
-    const response = await axios.get("http://localhost:3000/api/servicos");
-    const select = document.querySelector(selectId);
-    if (!select) return;
-
-    select.innerHTML = "";
-
-    response.data.forEach(servico => {
-      const option = document.createElement("option");
-      option.value = servico.id;
-      option.textContent = servico.descricao;
-      select.appendChild(option);
-    });
-  } catch (error) {
-    console.error("Erro ao carregar serviços:", error);
-  }
-}
-
-// Consulta todos os clientes da API
-async function consultarClientes() {
-  try {
-    const response = await axios.get("http://localhost:3000/api/clientes");
-    return response.data;
-  } catch (error) {
-    console.error("Erro ao consultar clientes:", error);
-    return [];
-  }
-}
-
 // Carrega os status em um <select> com seletor passado por parâmetro
 async function carregarStatusSelect(selectId) {
   const select = document.querySelector(selectId);
@@ -92,6 +82,26 @@ async function carregarStatusSelect(selectId) {
   }
 }
 
+// Carrega serviços em um select passando o seletor do select como argumento
+async function carregarServicosSelect(selectId) {
+  try {
+    const response = await axios.get("http://localhost:3000/api/servicos");
+    const select = document.querySelector(selectId);
+    if (!select) return;
+
+    select.innerHTML = "";
+
+    response.data.forEach(servico => {
+      const option = document.createElement("option");
+      option.value = servico.id;
+      option.textContent = servico.descricao;
+      select.appendChild(option);
+    });
+  } catch (error) {
+    console.error("Erro ao carregar serviços:", error);
+  }
+}
+
 // Carrega as espécies no select com id "especie"
 async function carregarEspecies() {
   const select = document.getElementById("especie");
@@ -109,5 +119,45 @@ async function carregarEspecies() {
     });
   } catch (error) {
     console.error("Erro ao carregar espécies:", error);
+  }
+}
+
+// Carrega as raças no select com id "raca" com base na espécie selecionada
+async function carregarRacasPorEspecie(especieId) {
+  const select = document.getElementById("raca");
+  if (!select || !especieId) return;
+
+  try {
+    const racas = await consultarRacasPorEspecie(especieId);
+    select.innerHTML = "";
+
+    racas.forEach(raca => {
+      const option = document.createElement("option");
+      option.value = raca.id;
+      option.textContent = raca.descricao;
+      select.appendChild(option);
+    });
+  } catch (error) {
+    console.error("Erro ao carregar raças:", error);
+  }
+}
+
+// Carrega os clientes no select com id "cliente"
+async function carregarClientes() {
+  const select = document.getElementById("cliente");
+  if (!select) return;
+
+  try {
+    const clientes = await consultarClientes();
+    select.innerHTML = "";
+
+    clientes.forEach(cliente => {
+      const option = document.createElement("option");
+      option.value = cliente.id;
+      option.textContent = cliente.nome;
+      select.appendChild(option);
+    });
+  } catch (error) {
+    console.error("Erro ao carregar clientes:", error);
   }
 }

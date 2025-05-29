@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Cadastro de Pets</title>
+  <link rel="stylesheet" href="../css/global.css" />
+  <link rel="stylesheet" href="css/cad_pets.css" />
+</head>
+<body>
+  <div class="container">
+    <h1>Cadastro de Pets</h1>
+
+    <form id="form-pet">
+      <label for="nome">Nome do Pet:</label>
+      <input type="text" id="nome" name="nome" required />
+
+      <label for="cliente">Tutor (Cliente):</label>
+      <select id="cliente" name="cliente" required></select>
+
+      <label for="especie">Espécie:</label>
+      <select id="especie" name="especie" required></select>
+
+      <label for="raca">Raça:</label>
+      <select id="raca" name="raca" required></select>
+
+      <label for="foto">Link da Foto:</label>
+      <input type="url" id="foto" name="foto" />
+
+      <label for="status">Status:</label>
+      <select id="status" name="status" required></select>
+
+      <button type="submit">Cadastrar</button>
+    </form>
+
+    <div id="pet-cadastrado"></div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  <script src="../js/utils.js"></script>
+  <script src="js/cad_pets.js"></script>
+</body>
+</html>

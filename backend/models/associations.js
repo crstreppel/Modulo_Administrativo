@@ -3,8 +3,9 @@ const Status    = require('./Status');
 const Racas     = require('./Racas');
 const Clientes  = require('./Clientes');
 const Especie   = require('./Especie');
-const CondicaoDePagamento = require('./CondicaoDePagamento'); // <-- novo
-const Meio_de_pagamento = require('./Meio_de_pagamento'); // <-- novo
+const CondicaoDePagamento = require('./CondicaoDePagamento');
+const Meio_de_pagamento = require('./Meio_de_pagamento');
+const Pets      = require('./Pets'); // <-- novo
 
 /* ------------------------------------------------------------------
  * RELACIONAMENTOS COM STATUS
@@ -69,6 +70,16 @@ Status.hasMany(Meio_de_pagamento, {
   as: 'meiosDePagamento',
 });
 
+// Pet pertence a um Status
+Pets.belongsTo(Status, {
+  foreignKey: 'statusId',
+  as: 'status',
+});
+Status.hasMany(Pets, {
+  foreignKey: 'statusId',
+  as: 'pets',
+});
+
 /* ------------------------------------------------------------------
  * RELACIONAMENTO ESPECIE ↔ RAÇAS
  * ----------------------------------------------------------------*/
@@ -83,6 +94,36 @@ Especie.hasMany(Racas, {
 });
 
 /* ------------------------------------------------------------------
+ * RELACIONAMENTO PET ↔ CLIENTES, ESPÉCIES, RAÇAS
+ * ----------------------------------------------------------------*/
+Pets.belongsTo(Clientes, {
+  foreignKey: 'clienteId',
+  as: 'cliente',
+});
+Clientes.hasMany(Pets, {
+  foreignKey: 'clienteId',
+  as: 'pets',
+});
+
+Pets.belongsTo(Especie, {
+  foreignKey: 'especieId',
+  as: 'especie',
+});
+Especie.hasMany(Pets, {
+  foreignKey: 'especieId',
+  as: 'pets',
+});
+
+Pets.belongsTo(Racas, {
+  foreignKey: 'racaId',
+  as: 'raca',
+});
+Racas.hasMany(Pets, {
+  foreignKey: 'racaId',
+  as: 'pets',
+});
+
+/* ------------------------------------------------------------------
  * EXPORTS
  * ----------------------------------------------------------------*/
 module.exports = {
@@ -92,5 +133,6 @@ module.exports = {
   Clientes,
   Especie,
   CondicaoDePagamento,
-  Meio_de_pagamento, // <-- novo
+  Meio_de_pagamento,
+  Pets, // <-- novo
 };

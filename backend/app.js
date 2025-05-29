@@ -9,7 +9,7 @@ const clientesRoutes = require('./routes/clientesRoutes');
 const especieRoutes = require('./routes/especieRoutes'); 
 const condicaoDePagamentoRoutes = require('./routes/condicaoDePagamentoRoutes'); // <-- Novo
 const meioDePagamentoRoutes = require('./routes/meioDePagamentoRoutes'); // <-- Novo
-
+const petsRoutes = require('./routes/petsRoutes');
 const app = express();
 
 // Importa as associações entre os models (MUITO IMPORTANTE!)
@@ -32,6 +32,8 @@ app.use('/api/clientes', clientesRoutes);
 app.use('/api/especies', especieRoutes); 
 app.use('/api/condicoes-de-pagamento', condicaoDePagamentoRoutes); // <-- Novo
 app.use('/api/meios-de-pagamento', meioDePagamentoRoutes); // <-- Novo
+app.use('/api/pets', petsRoutes);
+
 
 // Inicializa o servidor
 const PORT = 3000;
