@@ -7,9 +7,10 @@ const servicosRoutes = require('./routes/servicosRoutes');
 const racasRoutes = require('./routes/racasRoutes');
 const clientesRoutes = require('./routes/clientesRoutes');
 const especieRoutes = require('./routes/especieRoutes'); 
-const condicaoDePagamentoRoutes = require('./routes/condicaoDePagamentoRoutes'); // <-- Novo
-const meioDePagamentoRoutes = require('./routes/meioDePagamentoRoutes'); // <-- Novo
+const condicaoDePagamentoRoutes = require('./routes/condicaoDePagamentoRoutes');
+const meioDePagamentoRoutes = require('./routes/meioDePagamentoRoutes');
 const petsRoutes = require('./routes/petsRoutes');
+const tabelaDePrecosRoutes = require('./routes/tabelaDePrecosRoutes'); // <-- Novo
 const app = express();
 
 // Importa as associações entre os models (MUITO IMPORTANTE!)
@@ -30,16 +31,16 @@ app.use('/api/servicos', servicosRoutes);
 app.use('/api/racas', racasRoutes);
 app.use('/api/clientes', clientesRoutes);
 app.use('/api/especies', especieRoutes); 
-app.use('/api/condicoes-de-pagamento', condicaoDePagamentoRoutes); // <-- Novo
-app.use('/api/meios-de-pagamento', meioDePagamentoRoutes); // <-- Novo
+app.use('/api/condicoes-de-pagamento', condicaoDePagamentoRoutes);
+app.use('/api/meios-de-pagamento', meioDePagamentoRoutes);
 app.use('/api/pets', petsRoutes);
-
+app.use('/api/tabela-de-precos', tabelaDePrecosRoutes); // <-- Novo
 
 // Inicializa o servidor
 const PORT = 3000;
 app.listen(PORT, async () => {
   try {
-    await sequelize.sync({ force: true });
+    await sequelize.sync({ force: true }); // Altere para `force: false` em produção!
     console.log(`Servidor rodando em http://localhost:${PORT}`);
   } catch (error) {
     console.error('Erro ao sincronizar com o banco:', error);

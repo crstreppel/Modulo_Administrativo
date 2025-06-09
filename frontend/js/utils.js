@@ -1,3 +1,4 @@
+
 // Consulta todos os status da API
 async function consultarStatus() {
   try {
@@ -159,5 +160,66 @@ async function carregarClientes() {
     });
   } catch (error) {
     console.error("Erro ao carregar clientes:", error);
+  }
+}
+// Consulta todas as condições de pagamento
+async function consultarCondicoesPagamento() {
+  try {
+    const response = await axios.get('http://localhost:3000/api/condicoes-de-pagamento');
+    return response.data;
+  } catch (error) {
+    console.error('Erro ao consultar condições de pagamento:', error);
+    return [];
+  }
+}
+
+// Consulta todos os meios de pagamento
+async function consultarMeiosPagamento() {
+  try {
+    const response = await axios.get('http://localhost:3000/api/meios-de-pagamento');
+    return response.data;
+  } catch (error) {
+    console.error('Erro ao consultar meios de pagamento:', error);
+    return [];
+  }
+}
+
+// Carrega condições de pagamento em um select
+async function carregarCondicoesPagamentoSelect(selectId) {
+  const select = document.querySelector(selectId);
+  if (!select) return;
+
+  try {
+    const condicoes = await consultarCondicoesPagamento();
+    select.innerHTML = "";
+
+    condicoes.forEach(condicao => {
+      const option = document.createElement("option");
+      option.value = condicao.id;
+      option.textContent = condicao.descricao;
+      select.appendChild(option);
+    });
+  } catch (error) {
+    console.error("Erro ao carregar condições de pagamento:", error);
+  }
+}
+
+// Carrega meios de pagamento em um select
+async function carregarMeiosPagamentoSelect(selectId) {
+  const select = document.querySelector(selectId);
+  if (!select) return;
+
+  try {
+    const meios = await consultarMeiosPagamento();
+    select.innerHTML = "";
+
+    meios.forEach(meio => {
+      const option = document.createElement("option");
+      option.value = meio.id;
+      option.textContent = meio.descricao;
+      select.appendChild(option);
+    });
+  } catch (error) {
+    console.error("Erro ao carregar meios de pagamento:", error);
   }
 }

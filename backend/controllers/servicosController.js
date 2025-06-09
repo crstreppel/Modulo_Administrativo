@@ -1,5 +1,3 @@
-// backend/controllers/servicosController.js
-
 const Servicos = require('../models/Servicos');
 const Status = require('../models/Status');
 
@@ -26,11 +24,18 @@ module.exports = {
   async listarServicos(req, res) {
     try {
       const servicos = await Servicos.findAll({
-        include: { model: Status, attributes: ['descricao'] },
+        include: [{
+          model: Status,
+          as: 'status',
+          attributes: ['descricao']
+        }]
       });
       res.json(servicos);
     } catch (error) {
-      res.status(500).json({ erro: 'Erro ao listar serviços.', detalhes: error.message });
+      res.status(500).json({ 
+        erro: 'Erro ao listar serviços.', 
+        detalhes: error.message 
+      });
     }
   },
 

@@ -1,4 +1,4 @@
-const Meio_de_pagamento = require('../models/Meio_de_pagamento');
+const Meio_de_pagamento = require('../models/MeioDePagamento');
 const Status = require('../models/Status');
 
 // GET: Listar todos os meios de pagamento
