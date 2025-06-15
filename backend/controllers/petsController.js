@@ -4,10 +4,18 @@ const Especie = require('../models/Especie');
 const Racas = require('../models/Racas');
 const Status = require('../models/Status');
 
-// GET: Listar todos os pets
+// GET: Listar todos os pets ou filtrar por clienteId
 const listarPets = async (req, res) => {
+  const { clienteId } = req.query;
+
+  const where = {};
+  if (clienteId) {
+    where.clienteId = clienteId;
+  }
+
   try {
     const pets = await Pets.findAll({
+      where,
       include: [
         { model: Clientes, as: 'cliente' },
         { model: Especie, as: 'especie' },

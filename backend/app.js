@@ -10,7 +10,9 @@ const especieRoutes = require('./routes/especieRoutes');
 const condicaoDePagamentoRoutes = require('./routes/condicaoDePagamentoRoutes');
 const meioDePagamentoRoutes = require('./routes/meioDePagamentoRoutes');
 const petsRoutes = require('./routes/petsRoutes');
-const tabelaDePrecosRoutes = require('./routes/tabelaDePrecosRoutes'); // <-- Novo
+const tabelaDePrecosRoutes = require('./routes/tabelaDePrecosRoutes');
+const movimentosRoutes = require('./routes/movimentosRoutes'); // <-- Adicionado
+
 const app = express();
 
 // Importa as associações entre os models (MUITO IMPORTANTE!)
@@ -34,13 +36,14 @@ app.use('/api/especies', especieRoutes);
 app.use('/api/condicoes-de-pagamento', condicaoDePagamentoRoutes);
 app.use('/api/meios-de-pagamento', meioDePagamentoRoutes);
 app.use('/api/pets', petsRoutes);
-app.use('/api/tabela-de-precos', tabelaDePrecosRoutes); // <-- Novo
+app.use('/api/tabela-de-precos', tabelaDePrecosRoutes);
+app.use('/api/movimentos', movimentosRoutes); // <-- Rota nova, respeitando padrão
 
 // Inicializa o servidor
 const PORT = 3000;
 app.listen(PORT, async () => {
   try {
-    await sequelize.sync({ force: true }); // Altere para `force: false` em produção!
+    await sequelize.sync({ force: true }); // Force true só pra dev, produção vai com false!
     console.log(`Servidor rodando em http://localhost:${PORT}`);
   } catch (error) {
     console.error('Erro ao sincronizar com o banco:', error);

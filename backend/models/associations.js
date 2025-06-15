@@ -6,12 +6,12 @@ const Especie = require('./Especie');
 const CondicaoDePagamento = require('./CondicaoDePagamento');
 const Meio_de_pagamento = require('./MeioDePagamento');
 const Pets = require('./Pets');
-const TabelaDePrecos = require('./TabelaDePrecos'); // <-- Novo
+const TabelaDePrecos = require('./TabelaDePrecos');
+const Movimentos = require('./Movimentos'); // <-- Novo
 
 /* ------------------------------------------------------------------
  * RELACIONAMENTOS COM STATUS
  * ----------------------------------------------------------------*/
-// Serviço pertence a um Status
 Servicos.belongsTo(Status, {
   foreignKey: 'statusId',
   as: 'status',
@@ -21,7 +21,6 @@ Status.hasMany(Servicos, {
   as: 'servicos',
 });
 
-// Raça pertence a um Status
 Racas.belongsTo(Status, {
   foreignKey: 'statusId',
   as: 'status',
@@ -31,7 +30,6 @@ Status.hasMany(Racas, {
   as: 'racas',
 });
 
-// Cliente pertence a um Status
 Clientes.belongsTo(Status, {
   foreignKey: 'statusId',
   as: 'status',
@@ -41,7 +39,6 @@ Status.hasMany(Clientes, {
   as: 'clientes',
 });
 
-// Especie pertence a um Status
 Especie.belongsTo(Status, {
   foreignKey: 'statusId',
   as: 'status',
@@ -51,7 +48,6 @@ Status.hasMany(Especie, {
   as: 'especies',
 });
 
-// CondicaoDePagamento pertence a um Status
 CondicaoDePagamento.belongsTo(Status, {
   foreignKey: 'statusId',
   as: 'status',
@@ -61,7 +57,6 @@ Status.hasMany(CondicaoDePagamento, {
   as: 'condicoesDePagamento',
 });
 
-// Meio_de_pagamento pertence a um Status
 Meio_de_pagamento.belongsTo(Status, {
   foreignKey: 'statusId',
   as: 'status',
@@ -71,7 +66,6 @@ Status.hasMany(Meio_de_pagamento, {
   as: 'meiosDePagamento',
 });
 
-// Pet pertence a um Status
 Pets.belongsTo(Status, {
   foreignKey: 'statusId',
   as: 'status',
@@ -81,7 +75,6 @@ Status.hasMany(Pets, {
   as: 'pets',
 });
 
-// TabelaDePrecos pertence a um Status
 TabelaDePrecos.belongsTo(Status, {
   foreignKey: 'statusId',
   as: 'status',
@@ -91,10 +84,18 @@ Status.hasMany(TabelaDePrecos, {
   as: 'tabelasDePreco',
 });
 
+Movimentos.belongsTo(Status, {
+  foreignKey: 'statusId',
+  as: 'status',
+});
+Status.hasMany(Movimentos, {
+  foreignKey: 'statusId',
+  as: 'movimentos',
+});
+
 /* ------------------------------------------------------------------
  * RELACIONAMENTO ESPECIE ↔ RAÇAS
  * ----------------------------------------------------------------*/
-// Uma Raça pertence a uma Espécie
 Racas.belongsTo(Especie, {
   foreignKey: 'especieId',
   as: 'especie',
@@ -137,7 +138,6 @@ Racas.hasMany(Pets, {
 /* ------------------------------------------------------------------
  * RELACIONAMENTOS DA TABELA_DE_PRECOS
  * ----------------------------------------------------------------*/
-// TabelaDePrecos pertence a um Servico
 TabelaDePrecos.belongsTo(Servicos, {
   foreignKey: 'servicoId',
   as: 'servico',
@@ -147,7 +147,6 @@ Servicos.hasMany(TabelaDePrecos, {
   as: 'tabelasDePreco',
 });
 
-// TabelaDePrecos pertence a uma CondicaoDePagamento
 TabelaDePrecos.belongsTo(CondicaoDePagamento, {
   foreignKey: 'condicaoDePagamentoId',
   as: 'condicaoDePagamento',
@@ -157,7 +156,6 @@ CondicaoDePagamento.hasMany(TabelaDePrecos, {
   as: 'tabelasDePreco',
 });
 
-// TabelaDePrecos pertence a um Meio_de_pagamento
 TabelaDePrecos.belongsTo(Meio_de_pagamento, {
   foreignKey: 'meioDePagamentoId',
   as: 'meioDePagamento',
@@ -167,7 +165,6 @@ Meio_de_pagamento.hasMany(TabelaDePrecos, {
   as: 'tabelasDePreco',
 });
 
-// TabelaDePrecos pertence a uma Raça
 TabelaDePrecos.belongsTo(Racas, {
   foreignKey: 'racaId',
   as: 'raca',
@@ -177,7 +174,6 @@ Racas.hasMany(TabelaDePrecos, {
   as: 'tabelasDePreco',
 });
 
-// TabelaDePrecos pertence a um Pet
 TabelaDePrecos.belongsTo(Pets, {
   foreignKey: 'petId',
   as: 'pet',
@@ -185,6 +181,54 @@ TabelaDePrecos.belongsTo(Pets, {
 Pets.hasMany(TabelaDePrecos, {
   foreignKey: 'petId',
   as: 'tabelasDePreco',
+});
+
+/* ------------------------------------------------------------------
+ * RELACIONAMENTOS DO MÓDULO MOVIMENTOS
+ * ----------------------------------------------------------------*/
+Movimentos.belongsTo(Clientes, {
+  foreignKey: 'clienteId',
+  as: 'cliente',
+});
+Clientes.hasMany(Movimentos, {
+  foreignKey: 'clienteId',
+  as: 'movimentos',
+});
+
+Movimentos.belongsTo(Pets, {
+  foreignKey: 'petId',
+  as: 'pet',
+});
+Pets.hasMany(Movimentos, {
+  foreignKey: 'petId',
+  as: 'movimentos',
+});
+
+Movimentos.belongsTo(Servicos, {
+  foreignKey: 'servicoId',
+  as: 'servico',
+});
+Servicos.hasMany(Movimentos, {
+  foreignKey: 'servicoId',
+  as: 'movimentos',
+});
+
+Movimentos.belongsTo(CondicaoDePagamento, {
+  foreignKey: 'condicaoPagamentoId',
+  as: 'condicaoDePagamento',
+});
+CondicaoDePagamento.hasMany(Movimentos, {
+  foreignKey: 'condicaoPagamentoId',
+  as: 'movimentos',
+});
+
+Movimentos.belongsTo(Meio_de_pagamento, {
+  foreignKey: 'meioPagamentoId',
+  as: 'meioDePagamento',
+});
+Meio_de_pagamento.hasMany(Movimentos, {
+  foreignKey: 'meioPagamentoId',
+  as: 'movimentos',
 });
 
 /* ------------------------------------------------------------------
@@ -199,5 +243,6 @@ module.exports = {
   CondicaoDePagamento,
   Meio_de_pagamento,
   Pets,
-  TabelaDePrecos, // <-- Novo
+  TabelaDePrecos,
+  Movimentos, // <-- Novo!
 };

@@ -1,4 +1,3 @@
-
 // Consulta todos os status da API
 async function consultarStatus() {
   try {
@@ -50,7 +49,7 @@ async function carregarStatus() {
 
   try {
     const statusList = await consultarStatus();
-    select.innerHTML = ""; // limpa o select
+    select.innerHTML = "";
 
     statusList.forEach(status => {
       const option = document.createElement("option");
@@ -70,7 +69,7 @@ async function carregarStatusSelect(selectId) {
 
   try {
     const statusList = await consultarStatus();
-    select.innerHTML = ""; // limpa o select
+    select.innerHTML = "";
 
     statusList.forEach(status => {
       const option = document.createElement("option");
@@ -152,6 +151,13 @@ async function carregarClientes() {
     const clientes = await consultarClientes();
     select.innerHTML = "";
 
+    const defaultOption = document.createElement("option");
+    defaultOption.value = "";
+    defaultOption.textContent = "Selecione um cliente...";
+    defaultOption.disabled = true;
+    defaultOption.selected = true;
+    select.appendChild(defaultOption);
+
     clientes.forEach(cliente => {
       const option = document.createElement("option");
       option.value = cliente.id;
@@ -162,6 +168,7 @@ async function carregarClientes() {
     console.error("Erro ao carregar clientes:", error);
   }
 }
+
 // Consulta todas as condições de pagamento
 async function consultarCondicoesPagamento() {
   try {
@@ -221,5 +228,48 @@ async function carregarMeiosPagamentoSelect(selectId) {
     });
   } catch (error) {
     console.error("Erro ao carregar meios de pagamento:", error);
+  }
+}
+
+// Consulta pets por cliente
+async function consultarPetsPorCliente(clienteId) {
+  try {
+    const response = await axios.get(`http://localhost:3000/api/pets?clienteId=${clienteId}`);
+    return response.data;
+  } catch (error) {
+    console.error("Erro ao consultar pets do cliente:", error);
+    return [];
+  }
+}
+
+// Carrega pets no select com id "pet"
+async function carregarPetsDoCliente(clienteId) {
+  const select = document.getElementById("pet");
+  if (!select || !clienteId) return;
+
+  try {
+    const pets = await consultarPetsPorCliente(clienteId);
+    select.innerHTML = "";
+
+    pets.forEach(pet => {
+      const option = document.createElement("option");
+      option.value = pet.id;
+      option.textContent = pet.nome;
+      option.dataset.racaId = pet.racaId;
+      select.appendChild(option);
+    });
+  } catch (error) {
+    console.error("Erro ao carregar pets do cliente:", error);
+  }
+}
+
+// Consulta tabela de preços por petId (que também cobre fallback pra raça no backend)
+async function consultarTabelaDePrecos(petId) {
+  try {
+    const response = await axios.get(`http://localhost:3000/api/tabela-de-precos/${petId}`);
+    return response.data;
+  } catch (error) {
+    console.error("Erro ao consultar tabela de preços:", error);
+    return [];
   }
 }

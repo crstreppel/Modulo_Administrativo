@@ -5,6 +5,9 @@ const tabelaDePrecosController = require('../controllers/TabelaDePrecosControlle
 // GET: Listar todos os registros de preços
 router.get('/', tabelaDePrecosController.listarTabelaDePrecos);
 
+// GET: Buscar preços por pet (ou raça do pet, se necessário)
+router.get('/buscarPorPet/:petId', tabelaDePrecosController.buscarTabelaPorPetOuRaca); // <- NOVO
+
 // POST: Criar novo registro de preço
 router.post('/', tabelaDePrecosController.criarTabelaDePrecos);
 

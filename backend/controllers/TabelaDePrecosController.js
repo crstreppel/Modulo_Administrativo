@@ -26,12 +26,58 @@ const listarTabelaDePrecos = async (req, res) => {
   }
 };
 
+// GET: Buscar tabela de preços por petId ou racaId (regra de negócio)
+const buscarTabelaPorPetOuRaca = async (req, res) => {
+  const { petId } = req.query;
+
+  try {
+    const pet = await Pets.findByPk(petId);
+
+    if (!pet) {
+      return res.status(404).json({ erro: 'Pet não encontrado.' });
+    }
+
+    // Primeiro, tenta encontrar tabelas ligadas diretamente ao pet
+    const tabelasPorPet = await TabelaDePrecos.findAll({
+      where: { petId },
+      include: [
+        { model: Servicos, as: 'servico' },
+        { model: CondicaoDePagamento, as: 'condicaoDePagamento' },
+        { model: Meio_de_pagamento, as: 'meioDePagamento' },
+        { model: Pets, as: 'pet' },
+        { model: Status, as: 'status' }
+      ]
+    });
+
+    if (tabelasPorPet.length > 0) {
+      return res.status(200).json(tabelasPorPet);
+    }
+
+    // Se não encontrou por petId, busca por racaId do pet
+    const tabelasPorRaca = await TabelaDePrecos.findAll({
+      where: { racaId: pet.racaId },
+      include: [
+        { model: Servicos, as: 'servico' },
+        { model: CondicaoDePagamento, as: 'condicaoDePagamento' },
+        { model: Meio_de_pagamento, as: 'meioDePagamento' },
+        { model: Racas, as: 'raca' },
+        { model: Status, as: 'status' }
+      ]
+    });
+
+    return res.status(200).json(tabelasPorRaca);
+
+  } catch (error) {
+    console.error('Erro ao buscar tabela de preços por pet/raca:', error);
+    res.status(500).json({ erro: 'Erro ao buscar tabela de preços.' });
+  }
+};
+
 // POST: Criar um novo registro de preço
 const criarTabelaDePrecos = async (req, res) => {
   const { servicoId, condicaoDePagamentoId, meioDePagamentoId, racaId, petId, valorServico, statusId } = req.body;
 
   try {
-    // Valida regra de que deve ter racaId OU petId, mas não os dois
     if ((petId && racaId) || (!petId && !racaId)) {
       return res.status(400).json({ erro: 'Informe apenas petId ou racaId, mas não ambos.' });
     }
@@ -76,7 +122,6 @@ const atualizarTabelaDePrecos = async (req, res) => {
       return res.status(404).json({ erro: 'Registro não encontrado.' });
     }
 
-    // Valida regra de que deve ter racaId OU petId, mas não os dois
     if ((petId && racaId) || (!petId && !racaId)) {
       return res.status(400).json({ erro: 'Informe apenas petId ou racaId, mas não ambos.' });
     }
@@ -119,6 +164,7 @@ const deletarTabelaDePrecos = async (req, res) => {
 
 module.exports = {
   listarTabelaDePrecos,
+  buscarTabelaPorPetOuRaca, // <- NOVO
   criarTabelaDePrecos,
   atualizarTabelaDePrecos,
   deletarTabelaDePrecos,
