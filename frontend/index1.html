@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Página Inicial - Sistema PetShop 1.0</title>
+  <link rel="stylesheet" href="./global.css" />
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #f5f7fa;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 2rem;
+    }
+
+    h1 {
+      margin-bottom: 2rem;
+      color: #2c3e50;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 1.5rem;
+      width: 100%;
+      max-width: 1000px;
+    }
+
+    .card {
+      background-color: #ffffff;
+      border-radius: 1rem;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      text-align: center;
+      padding: 1.5rem 1rem;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      text-decoration: none;
+      color: #333;
+    }
+
+    .card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 6px 16px rgba(0,0,0,0.15);
+    }
+
+    .card-icon {
+      font-size: 2.5rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .card-label {
+      font-weight: bold;
+      font-size: 1rem;
+    }
+  </style>
+</head>
+<body>
+  <h1>🐾 Bem-vindo ao Sistema PetShop 1.0</h1>
+
+  <div class="grid">
+    <a href="./clientes/cad_clientes.html" class="card">
+      <div class="card-icon">👤</div>
+      <div class="card-label">Clientes</div>
+    </a>
+
+    <a href="./pets/cad_pets.html" class="card">
+      <div class="card-icon">🐶</div>
+      <div class="card-label">Pets</div>
+    </a>
+
+    <a href="./movimentos/cad_movimentos.html" class="card">
+      <div class="card-icon">📋</div>
+      <div class="card-label">Movimentos</div>
+    </a>
+
+    <a href="./Tabela_de_Precos/cad_tabeladeprecos.html" class="card">
+      <div class="card-icon">💲</div>
+      <div class="card-label">Tabela de Preços</div>
+    </a>
+
+    <a href="./condicao_de_pagamento/cod_pagto.html" class="card">
+      <div class="card-icon">🧾</div>
+      <div class="card-label">Condição Pagamento</div>
+    </a>
+
+    <a href="./meio_de_pagamento/cad_meioDePagamento.html" class="card">
+      <div class="card-icon">💳</div>
+      <div class="card-label">Meio Pagamento</div>
+    </a>
+
+    <a href="./status/cad_status.html" class="card">
+      <div class="card-icon">✅</div>
+      <div class="card-label">Status</div>
+    </a>
+
+    <a href="./especie/cad_especie.html" class="card">
+      <div class="card-icon">🐾</div>
+      <div class="card-label">Espécies</div>
+    </a>
+
+    <a href="./racas/cad_racas.html" class="card">
+      <div class="card-icon">🐕</div>
+      <div class="card-label">Raças</div>
+    </a>
+
+    <a href="./funcionarios/cad_funcionarios.html" class="card">
+      <div class="card-icon">👩‍⚕️</div>
+      <div class="card-label">Funcionários</div>
+    </a>
+
+    <a href="./produtos/cad_produtos.html" class="card">
+      <div class="card-icon">🛍️</div>
+      <div class="card-label">Produtos</div>
+    </a>
+
+    <a href="./vendas/cad_vendas.html" class="card">
+      <div class="card-icon">💰</div>
+      <div class="card-label">Vendas</div>
+    </a>
+  </div>
+</body>
+</html>

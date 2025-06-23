@@ -4,14 +4,42 @@ const Status = require('../models/Status');
 module.exports = {
   async criarCliente(req, res) {
     try {
-      const { nome, telefone, endereco, numero, bairro, cpf, statusId } = req.body;
+      const {
+        nome,
+        telefone,
+        endereco,
+        numero,
+        bairro,
+        cidade,
+        estado,
+        pais,
+        cpf,
+        statusId,
+        aceitaLembreteBanho,
+        redesSociais
+      } = req.body;
+
       console.log('Requisição recebida:', req.body);
 
       if (!nome || !telefone || !endereco || !numero || !bairro || !cpf || !statusId) {
-        return res.status(400).json({ erro: 'Todos os campos são obrigatórios.' });
+        return res.status(400).json({ erro: 'Todos os campos obrigatórios devem ser preenchidos.' });
       }
 
-      const novoCliente = await Clientes.create({ nome, telefone, endereco, numero, bairro, cpf, statusId });
+      const novoCliente = await Clientes.create({
+        nome,
+        telefone,
+        endereco,
+        numero,
+        bairro,
+        cidade,
+        estado,
+        pais,
+        cpf,
+        statusId,
+        aceitaLembreteBanho,
+        redesSociais
+      });
+
       const status = await Status.findByPk(statusId);
 
       res.status(201).json({ ...novoCliente.toJSON(), status });
@@ -35,7 +63,20 @@ module.exports = {
   async atualizarCliente(req, res) {
     try {
       const { id } = req.params;
-      const { nome, telefone, endereco, numero, bairro, cpf, statusId } = req.body;
+      const {
+        nome,
+        telefone,
+        endereco,
+        numero,
+        bairro,
+        cidade,
+        estado,
+        pais,
+        cpf,
+        statusId,
+        aceitaLembreteBanho,
+        redesSociais
+      } = req.body;
 
       const cliente = await Clientes.findByPk(id);
       if (!cliente) {
@@ -47,8 +88,13 @@ module.exports = {
       cliente.endereco = endereco || cliente.endereco;
       cliente.numero = numero || cliente.numero;
       cliente.bairro = bairro || cliente.bairro;
+      cliente.cidade = cidade || cliente.cidade;
+      cliente.estado = estado || cliente.estado;
+      cliente.pais = pais || cliente.pais;
       cliente.cpf = cpf || cliente.cpf;
       cliente.statusId = statusId || cliente.statusId;
+      cliente.aceitaLembreteBanho = aceitaLembreteBanho ?? cliente.aceitaLembreteBanho;
+      cliente.redesSociais = redesSociais || cliente.redesSociais;
 
       await cliente.save();
 

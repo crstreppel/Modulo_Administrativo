@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>PetLand - Centro de Comando</title>
+  <link rel="stylesheet" href="./global.css" />
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #fefae0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+    }
+
+    h1 {
+      color: #2e2e2e;
+      margin-bottom: 1rem;
+    }
+
+    .mapa {
+      background-color: #fff;
+      width: 90%;
+      max-width: 1000px;
+      padding: 2rem;
+      border-radius: 2rem;
+      box-shadow: 0 0 20px rgba(0,0,0,0.1);
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1.5rem;
+    }
+
+    .area {
+      background-color: #e1f5fe;
+      border-radius: 1rem;
+      padding: 1rem;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-decoration: none;
+      color: #2c3e50;
+    }
+
+    .area:hover {
+      background-color: #b3e5fc;
+      transform: scale(1.05);
+    }
+
+    .area span {
+      font-size: 2rem;
+      display: block;
+      margin-bottom: 0.5rem;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>🗺️ Mapa Interativo do Sistema PetShop</h1>
+  <div class="mapa">
+    <a href="./clientes/cad_clientes.html" class="area"><span>🏠</span>Recepção (Clientes)</a>
+    <a href="./pets/cad_pets.html" class="area"><span>🐶</span>Canil/Gatil (Pets)</a>
+    <a href="./movimentos/cad_movimentos.html" class="area"><span>📋</span>Agenda (Movimentos)</a>
+    <a href="./tabelaDePrecos/cad_tabelaDePrecos.html" class="area"><span>💲</span>Serviços e Preços</a>
+    <a href="./vendas/cad_vendas.html" class="area"><span>🛒</span>Loja (Vendas)</a>
+    <a href="./produtos/cad_produtos.html" class="area"><span>📦</span>Estoque (Produtos)</a>
+    <a href="./funcionarios/cad_funcionarios.html" class="area"><span>👩‍⚕️</span>Equipe</a>
+    <a href="./status/cad_status.html" class="area"><span>✅</span>Status do Sistema</a>
+  </div>
+
+</body>
+</html>

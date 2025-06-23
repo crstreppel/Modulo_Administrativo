@@ -21,7 +21,8 @@ async function popularServicos() {
       { id: 1, descricao: 'BANHO', statusId: statusAtivo.id },
       { id: 2, descricao: 'BANHO E TOSA', statusId: statusAtivo.id },
       { id: 3, descricao: 'HOSPEDAGEM', statusId: statusAtivo.id },
-      { id: 4, descricao: 'CRECHE', statusId: statusAtivo.id }
+      { id: 4, descricao: 'CRECHE', statusId: statusAtivo.id },
+      { id: 5, descricao: 'VISITA', statusId: statusAtivo.id }
     ];
 
     // 4. Upsert com bulkCreate para melhor performance

@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Bem-vindo ao PetShop 1.0</title>
+  <link rel="stylesheet" href="./global.css" />
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(to bottom right, #fefefe, #dfefff);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      overflow: hidden;
+      flex-direction: column;
+      text-align: center;
+    }
+
+    .mascote {
+      width: 150px;
+      animation: pulse 2s infinite ease-in-out;
+      margin-bottom: 1rem;
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+    }
+
+    h1 {
+      font-size: 2rem;
+      color: #2c3e50;
+      margin-bottom: 0.5rem;
+    }
+
+    p {
+      color: #555;
+      margin-bottom: 2rem;
+    }
+
+    .btn-container {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 1rem;
+    }
+
+    .btn {
+      padding: 0.8rem 1.5rem;
+      background-color: #3498db;
+      color: white;
+      border: none;
+      border-radius: 12px;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: transform 0.2s, background 0.2s;
+      text-decoration: none;
+    }
+
+    .btn:hover {
+      transform: scale(1.05);
+      background-color: #2980b9;
+    }
+
+    @media (max-width: 600px) {
+      .btn {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Mascote animado (pode substituir por um GIF depois se quiser mais estilo) -->
+  <img src="https://i.ibb.co/gVST6QQ/mascote-petshop.png" alt="Mascote" class="mascote">
+
+  <h1>Bem-vindo, Cláudio!</h1>
+  <p>O mascote do sistema já está de patas limpas e pronto pra te ajudar 🐶✨</p>
+
+  <div class="btn-container">
+    <a href="./clientes/cad_clientes.html" class="btn">Clientes</a>
+    <a href="./pets/cad_pets.html" class="btn">Pets</a>
+    <a href="./movimentos/cad_movimentos.html" class="btn">Movimentos</a>
+    <a href="./tabelaDePrecos/cad_tabelaDePrecos.html" class="btn">Tabela de Preços</a>
+    <a href="./produtos/cad_produtos.html" class="btn">Produtos</a>
+    <a href="./vendas/cad_vendas.html" class="btn">Vendas</a>
+  </div>
+
+</body>
+</html>

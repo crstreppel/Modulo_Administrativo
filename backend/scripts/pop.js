@@ -1,7 +1,7 @@
-const popularStatus = require('./popular_tab_status');
-const popularServicos = require('./popular_tab_servicos');
-const popularRacas = require('./popular_tab_racas');
-const popularClientes = require('./pop_tabela_clientes');
+const popularStatus = require('./pop_tab_status');
+const popularServicos = require('./pop_tab_servicos');
+const popularRacas = require('./pop_tab_racas')
+
 const { sequelize } = require('../config/db');
 
 async function main() {
@@ -12,7 +12,7 @@ async function main() {
     await popularStatus();
     await popularServicos();
     await popularRacas();
-    await popularClientes();
+    
 
     // Corrige a sequência do ID da tabela racas
     await sequelize.query(`SELECT setval('racas_id_seq', (SELECT MAX(id) FROM racas));`);

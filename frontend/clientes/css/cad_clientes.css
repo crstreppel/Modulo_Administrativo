@@ -1,0 +1,112 @@
+/* Alinha o campo de endereço com o botão do mapa */
+#endereco + button#btn-mapa {
+  padding: 6px 10px;
+  font-size: 1.2rem;
+  border: none;
+  background-color: #4CAF50;
+  color: white;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  flex-shrink: 0;
+}
+
+#endereco + button#btn-mapa:hover {
+  background-color: #45a049;
+}
+
+/* Container do endereço com botão */
+#form-cliente div:has(#btn-mapa) {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+/* Campo de redes sociais e botão "+" */
+#adicionar-rede {
+  margin-top: 8px;
+  margin-bottom: 16px;
+  background-color: #2196F3;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: background-color 0.2s;
+}
+
+#adicionar-rede:hover {
+  background-color: #1976D2;
+}
+
+/* Estilo pros inputs extras de redes sociais */
+#redes-sociais input {
+  display: block;
+  width: 100%;
+  margin-bottom: 6px;
+  padding: 6px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+/* ====== BOTÃO DO MAPA ====== */
+#form-cliente .mapa-container {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+#btn-mapa {
+  padding: 8px 10px;
+  font-size: 1.2rem;
+  border: none;
+  background-color: #4CAF50;
+  color: white;
+  border-radius: 6px;
+  cursor: pointer;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s ease;
+}
+
+#btn-mapa:hover {
+  background-color: #45a049;
+}
+
+/* ====== BOTÃO + ADICIONAR REDE SOCIAL ====== */
+#adicionar-rede {
+  margin-top: 8px;
+  margin-bottom: 16px;
+  background-color: #2196F3;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: background-color 0.2s;
+  display: inline-block;
+}
+
+#adicionar-rede:hover {
+  background-color: #1976D2;
+}
+
+/* Garante que o status não fique colado no botão "+" */
+#status {
+  margin-top: 8px;
+}
+
+/* Inputs adicionais de rede social */
+#redes-sociais input {
+  display: block;
+  width: 100%;
+  margin-bottom: 6px;
+  padding: 6px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}

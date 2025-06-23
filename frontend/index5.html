@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Dashboard - PetShop 1.0</title>
+  <link rel="stylesheet" href="./global.css" />
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #f4f6f8;
+      padding: 2rem;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 2rem;
+      color: #2c3e50;
+    }
+
+    .kpis {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 3rem;
+    }
+
+    .kpi {
+      background-color: #ffffff;
+      border-radius: 1rem;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+      padding: 1.5rem;
+      text-align: center;
+    }
+
+    .kpi h2 {
+      font-size: 2rem;
+      color: #27ae60;
+    }
+
+    .kpi p {
+      margin-top: 0.5rem;
+      color: #7f8c8d;
+    }
+
+    .modulos {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 1.5rem;
+    }
+
+    .modulo {
+      background-color: #3498db;
+      color: white;
+      padding: 1rem;
+      border-radius: 1rem;
+      text-align: center;
+      text-decoration: none;
+      transition: transform 0.2s;
+    }
+
+    .modulo:hover {
+      transform: translateY(-4px);
+      background-color: #2980b9;
+    }
+
+    .modulo span {
+      display: block;
+      font-size: 1.5rem;
+      margin-bottom: 0.5rem;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>📊 Dashboard PetShop 1.0</h1>
+
+  <div class="kpis">
+    <div class="kpi">
+      <h2>102</h2>
+      <p>Clientes Ativos</p>
+    </div>
+    <div class="kpi">
+      <h2>87</h2>
+      <p>Pets Hospedados</p>
+    </div>
+    <div class="kpi">
+      <h2>R$ 3.240</h2>
+      <p>Faturamento Hoje</p>
+    </div>
+    <div class="kpi">
+      <h2>25</h2>
+      <p>Serviços Agendados</p>
+    </div>
+  </div>
+
+  <div class="modulos">
+    <a href="./clientes/cad_clientes.html" class="modulo"><span>👤</span>Clientes</a>
+    <a href="./pets/cad_pets.html" class="modulo"><span>🐶</span>Pets</a>
+    <a href="./movimentos/cad_movimentos.html" class="modulo"><span>📋</span>Movimentos</a>
+    <a href="./tabelaDePrecos/cad_tabelaDePrecos.html" class="modulo"><span>💲</span>Tabela de Preços</a>
+    <a href="./vendas/cad_vendas.html" class="modulo"><span>💰</span>Vendas</a>
+    <a href="./produtos/cad_produtos.html" class="modulo"><span>🛍️</span>Produtos</a>
+    <a href="./status/cad_status.html" class="modulo"><span>✅</span>Status</a>
+    <a href="./funcionarios/cad_funcionarios.html" class="modulo"><span>👩‍⚕️</span>Funcionários</a>
+  </div>
+
+</body>
+</html>

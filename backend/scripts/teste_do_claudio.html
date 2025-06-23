@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Teste do Claudio - Cadastro Pet e Tabela de Preços</title>
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    label { display: block; margin-top: 10px; }
+    select, input { width: 200px; padding: 5px; margin-top: 5px; }
+    #valorTabelaPreco { margin-top: 15px; font-weight: bold; }
+  </style>
+</head>
+<body>
+
+  <h2>Teste do Claudio - Cadastro Pet + Consulta Tabela de Preços</h2>
+
+  <form id="formCadastroPet">
+    <label for="cliente">Cliente:</label>
+    <select id="cliente" required>
+      <option value="" disabled selected>Selecione um cliente...</option>
+    </select>
+
+    <label for="pet">Pet:</label>
+    <select id="pet" required disabled>
+      <option value="" disabled selected>Selecione um pet...</option>
+    </select>
+
+    <div id="valorTabelaPreco">Selecione um pet para ver o valor da tabela de preços</div>
+
+    <button type="submit" style="margin-top:20px;">Cadastrar Pet</button>
+  </form>
+
+  <script>
+    const clienteSelect = document.getElementById('cliente');
+    const petSelect = document.getElementById('pet');
+    const valorTabelaPrecoDiv = document.getElementById('valorTabelaPreco');
+    const form = document.getElementById('formCadastroPet');
+
+    // Função para carregar clientes
+    async function carregarClientes() {
+      try {
+        const response = await axios.get('http://localhost:3000/api/clientes');
+        const clientes = response.data;
+        clientes.forEach(cliente => {
+          const option = document.createElement('option');
+          option.value = cliente.id;
+          option.textContent = cliente.nome;
+          clienteSelect.appendChild(option);
+        });
+      } catch (error) {
+        console.error('Erro ao carregar clientes:', error);
+        alert('Erro ao carregar clientes');
+      }
+    }
+
+    // Função para carregar pets do cliente selecionado
+    async function carregarPetsDoCliente(clienteId) {
+      petSelect.innerHTML = '<option value="" disabled selected>Selecione um pet...</option>';
+      petSelect.disabled = true;
+      valorTabelaPrecoDiv.textContent = 'Selecione um pet para ver o valor da tabela de preços';
+
+      if (!clienteId) return;
+
+      try {
+        const response = await axios.get(`http://localhost:3000/api/pets?clienteId=${clienteId}`);
+        const pets = response.data;
+        if (pets.length === 0) {
+          valorTabelaPrecoDiv.textContent = 'Este cliente não possui pets cadastrados.';
+          return;
+        }
+
+        pets.forEach(pet => {
+          const option = document.createElement('option');
+          option.value = pet.id;
+          option.textContent = pet.nome;
+          option.dataset.racaId = pet.racaId;
+          petSelect.appendChild(option);
+        });
+
+        petSelect.disabled = false;
+      } catch (error) {
+        console.error('Erro ao carregar pets:', error);
+        alert('Erro ao carregar pets do cliente');
+      }
+    }
+
+    // Função para consultar tabela de preços pelo pet selecionado e mostrar o valor
+    async function consultarTabelaDePrecosEExibir(petId, racaId) {
+      valorTabelaPrecoDiv.textContent = 'Consultando tabela de preços...';
+
+      try {
+        // Primeiro tenta por petId
+        let response = await axios.get(`http://localhost:3000/api/tabela-de-precos?petId=${petId}`);
+        let tabela = response.data;
+
+        if (tabela.length === 0) {
+          // Se não encontrar, tenta por racaId
+          response = await axios.get(`http://localhost:3000/api/tabela-de-precos?racaId=${racaId}`);
+          tabela = response.data;
+        }
+
+        if (tabela.length === 0) {
+          valorTabelaPrecoDiv.textContent = 'Nenhuma entrada encontrada na tabela de preços para este pet ou raça.';
+          return;
+        }
+
+        // Aqui o ajuste: usar valorServico e converter para número antes do toFixed
+        valorTabelaPrecoDiv.textContent = `Valor tabela de preços: R$ ${Number(tabela[0].valorServico).toFixed(2)}`;
+
+      } catch (error) {
+        console.error('Erro ao consultar tabela de preços:', error);
+        valorTabelaPrecoDiv.textContent = 'Erro ao consultar tabela de preços.';
+      }
+    }
+
+    // Eventos
+    clienteSelect.addEventListener('change', () => {
+      const clienteId = clienteSelect.value;
+      carregarPetsDoCliente(clienteId);
+    });
+
+    petSelect.addEventListener('change', () => {
+      const petId = petSelect.value;
+      const racaId = petSelect.selectedOptions[0].dataset.racaId;
+      if (petId) {
+        consultarTabelaDePrecosEExibir(petId, racaId);
+      } else {
+        valorTabelaPrecoDiv.textContent = 'Selecione um pet para ver o valor da tabela de preços';
+      }
+    });
+
+    form.addEventListener('submit', e => {
+      e.preventDefault();
+      if (!clienteSelect.value || !petSelect.value) {
+        alert('Selecione cliente e pet antes de cadastrar.');
+        return;
+      }
+      alert(`Pet cadastrado com sucesso!\nCliente ID: ${clienteSelect.value}\nPet ID: ${petSelect.value}`);
+      // Aqui você pode adicionar a lógica para salvar o cadastro
+      form.reset();
+      petSelect.disabled = true;
+      valorTabelaPrecoDiv.textContent = 'Selecione um pet para ver o valor da tabela de preços';
+    });
+
+    // Início - carregar clientes ao abrir a página
+    carregarClientes();
+  </script>
+
+</body>
+</html>

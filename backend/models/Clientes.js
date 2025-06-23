@@ -28,10 +28,30 @@ const Clientes = sequelize.define('Clientes', {
     type: DataTypes.STRING,
     allowNull: false,
   },
+  cidade: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
+  estado: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
+  pais: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
   cpf: {
     type: DataTypes.STRING,
     allowNull: false,
     unique: true,
+  },
+  redesSociais: {
+    type: DataTypes.ARRAY(DataTypes.STRING), // PostgreSQL nativo aceita array
+    allowNull: true,
+  },
+  aceitaLembreteBanho: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false,
   },
   statusId: {
     type: DataTypes.INTEGER,

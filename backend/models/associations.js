@@ -230,6 +230,14 @@ Meio_de_pagamento.hasMany(Movimentos, {
   foreignKey: 'meioPagamentoId',
   as: 'movimentos',
 });
+Movimentos.belongsTo(TabelaDePrecos, {
+  foreignKey: 'tabelaDePrecosId',
+  as: 'tabelaDePreco',
+});
+TabelaDePrecos.hasMany(Movimentos, {
+  foreignKey: 'tabelaDePrecosId',
+  as: 'movimentos',
+});
 
 /* ------------------------------------------------------------------
  * EXPORTS

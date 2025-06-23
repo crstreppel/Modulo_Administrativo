@@ -2,58 +2,53 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Cadastro de Movimentos</title>
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
   <link rel="stylesheet" href="../css/global.css" />
-  <link rel="stylesheet" href="css/cad_movimentos.css" />
+  <link rel="stylesheet" href="./css/cad_movimentos.css" />
 </head>
 <body>
-  <div class="container">
-    <h1>Cadastro de Movimentos</h1>
-
-    <form id="form-movimento">
-      <label for="data_lancamento">Data do Lançamento:</label>
+  <main>
+    <h1>Cadastro de Movimento</h1>
+    <form id="formCadastroMovimento">
+      <label for="data_lancamento">Data Lançamento:</label>
       <input type="date" id="data_lancamento" name="data_lancamento" required />
 
       <label for="cliente">Cliente:</label>
-      <select id="cliente" name="cliente" required></select>
+      <select id="cliente" required></select>
 
       <label for="pet">Pet:</label>
-      <select id="pet" name="pet" required disabled></select>
+      <select id="pet" required disabled></select>
 
       <label for="servico">Serviço:</label>
-      <select id="servico" name="servico" required></select>
+      <select id="servico" required></select>
+
+      <!-- Container para renderizar a lista interativa da tabela de preços -->
+      <div id="tabela-precos">
+        <label for="tabelaDePrecos">Tabela de Preços:</label>
+        <select id="tabelaDePrecos" required disabled>
+          <option value="">Selecione um pet e serviço primeiro</option>
+        </select>
+        <input type="hidden" id="tabelaDePrecosId" />
+      </div>
 
       <label for="valor">Valor:</label>
-      <input type="number" id="valor" name="valor" step="0.01" required />
-
-      <label for="condicaoPagamento">Condição de Pagamento:</label>
-      <select id="condicaoPagamento" name="condicaoPagamento" required></select>
-
-      <label for="meioPagamento">Meio de Pagamento:</label>
-      <select id="meioPagamento" name="meioPagamento" required></select>
-
-      <label for="data_vencimento">Data de Vencimento:</label>
-      <input type="date" id="data_vencimento" name="data_vencimento" readonly />
-
-      <label for="data_liquidacao">Data de Liquidação:</label>
-      <input type="date" id="data_liquidacao" name="data_liquidacao" />
-
-      <label for="observacao">Observação:</label>
-      <textarea id="observacao" name="observacao" maxlength="300"></textarea>
+      <input type="number" id="valor" name="valor" required />
 
       <label for="status">Status:</label>
-      <select id="status" name="status" required></select>
+      <select id="status" required></select>
 
-      <button type="submit">Cadastrar</button>
+      <label for="condicaoPagamento">Condição de Pagamento:</label>
+      <select id="condicaoPagamento" required></select>
+
+      <label for="meioPagamento">Meio de Pagamento:</label>
+      <select id="meioPagamento" required></select>
+
+      <button type="submit">Salvar Movimento</button>
     </form>
-
-    <div id="movimento-cadastrado"></div>
-    <div id="tabela-precos"></div> <!-- Adicionado para mostrar a tabela -->
-  </div>
-
-  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  </main>
   <script src="../js/utils.js"></script>
-  <script src="js/cad_movimentos.js"></script>
+  <script src="./js/cad_movimentos.js"></script>
 </body>
 </html>

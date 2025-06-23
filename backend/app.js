@@ -43,7 +43,7 @@ app.use('/api/movimentos', movimentosRoutes); // <-- Rota nova, respeitando padr
 const PORT = 3000;
 app.listen(PORT, async () => {
   try {
-    await sequelize.sync({ force: true }); // Force true só pra dev, produção vai com false!
+    await sequelize.sync({ force: false, logging: false  }); // 🔥 Agora não apaga mais nada!
     console.log(`Servidor rodando em http://localhost:${PORT}`);
   } catch (error) {
     console.error('Erro ao sincronizar com o banco:', error);

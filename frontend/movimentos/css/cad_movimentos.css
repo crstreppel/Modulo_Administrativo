@@ -33,7 +33,7 @@ form textarea {
 form textarea {
   resize: vertical;
   min-height: 80px;
-  max-length: 300;
+  
 }
 
 .row {
@@ -63,4 +63,9 @@ button {
 
 button:hover {
   background-color: dodgerblue;
+}
+#tabela-precos ul li.selecionado {
+  background-color: #d9f4ff;
+  font-weight: bold;
+  border-left: 4px solid #3399ff;
 }

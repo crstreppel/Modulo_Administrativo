@@ -1,3 +1,5 @@
+// utils.js - completo, ajustado e pronto para o combate
+
 // Consulta todos os status da API
 async function consultarStatus() {
   try {
@@ -41,7 +43,6 @@ async function consultarClientes() {
     return [];
   }
 }
-
 // Carrega os status no select com id "status"
 async function carregarStatus() {
   const select = document.getElementById("status");
@@ -61,7 +62,6 @@ async function carregarStatus() {
     console.error("Erro ao carregar status:", error);
   }
 }
-
 // Carrega os status em um <select> com seletor passado por parâmetro
 async function carregarStatusSelect(selectId) {
   const select = document.querySelector(selectId);
@@ -251,6 +251,13 @@ async function carregarPetsDoCliente(clienteId) {
     const pets = await consultarPetsPorCliente(clienteId);
     select.innerHTML = "";
 
+    const defaultOption = document.createElement("option");
+    defaultOption.value = "";
+    defaultOption.textContent = "Selecione um pet...";
+    defaultOption.disabled = true;
+    defaultOption.selected = true;
+    select.appendChild(defaultOption);
+
     pets.forEach(pet => {
       const option = document.createElement("option");
       option.value = pet.id;
@@ -263,13 +270,50 @@ async function carregarPetsDoCliente(clienteId) {
   }
 }
 
-// Consulta tabela de preços por petId (que também cobre fallback pra raça no backend)
-async function consultarTabelaDePrecos(petId) {
+// Consulta tabela de preços por petId
+async function consultarTabelaDePrecosPorPet(petId) {
   try {
-    const response = await axios.get(`http://localhost:3000/api/tabela-de-precos/${petId}`);
+    const response = await axios.get(`http://localhost:3000/api/tabela-de-precos?petId=${petId}`);
     return response.data;
   } catch (error) {
-    console.error("Erro ao consultar tabela de preços:", error);
+    console.error("Erro ao consultar tabela de preços por pet:", error);
     return [];
   }
+}
+
+// Consulta tabela de preços por raça
+async function consultarTabelaDePrecosPorRaca(racaId) {
+  try {
+    const response = await axios.get(`http://localhost:3000/api/tabela-de-precos?racaId=${racaId}`);
+    return response.data;
+  } catch (error) {
+    console.error("Erro ao consultar tabela de preços por raça:", error);
+    return [];
+  }
+}
+// Configura o botão de mapa no formulário de clientes
+function configurarBotaoMapa() {
+  const btn = document.getElementById('btn-mapa');
+  if (!btn) return;
+
+  btn.addEventListener('click', () => {
+    const endereco = document.getElementById('endereco')?.value || '';
+    const cidade = document.getElementById('cidade')?.value || '';
+    const estado = document.getElementById('estado')?.value || '';
+    const pais = document.getElementById('pais')?.value || '';
+    const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${endereco}, ${cidade}, ${estado}, ${pais}`)}`;
+    window.open(url, '_blank');
+  });
+}
+
+// Configura o botão de adicionar novos campos de redes sociais
+function configurarAdicaoRedeSocial() {
+  const botao = document.getElementById('adicionar-rede');
+  if (!botao) return;
+
+  botao.addEventListener('click', () => {
+    const div = document.createElement('div');
+    div.innerHTML = '<input type="text" name="redeSocial[]" placeholder="https://..." />';
+    document.getElementById('redes-sociais').appendChild(div);
+  });
 }

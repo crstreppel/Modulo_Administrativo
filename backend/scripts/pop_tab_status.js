@@ -13,9 +13,11 @@ async function popularStatus() {
     // 2. Dados iniciais (compatíveis com seu model)
     const statuses = [
       { id: 1, descricao: 'ATIVO' },
-      { id: 2, descricao: 'INATIVO' },
-      { id: 3, descricao: 'ABERTO' },
-      { id: 4, descricao: 'LIQUIDADO' }
+      { id: 2, descricao: 'ABERTO' },
+      { id: 3, descricao: 'ABERTO PARCIAL' },
+      { id: 4, descricao: 'INATIVO' },
+      { id: 5, descricao: 'LIQUIDADO' },
+      { id: 6, descricao: 'FALECIDO' }
     ];
 
     // 3. Upsert (insere ou atualiza se o ID já existir)
