@@ -7,7 +7,7 @@ const Servicos = require('./Servicos');
 const CondicaoPagamento = require('./CondicaoDePagamento');
 const MeioPagamento = require('./MeioDePagamento');
 const Status = require('./Status');
-const TabelaDePrecos = require('./TabelaDePrecos'); // <-- novo
+const TabelaDePrecos = require('./TabelaDePrecos');
 
 const Movimentos = sequelize.define('Movimentos', {
   id: {
@@ -47,7 +47,7 @@ const Movimentos = sequelize.define('Movimentos', {
       key: 'id',
     }
   },
-  tabelaDePrecosId: { // <-- novo campo
+  tabelaDePrecosId: {
     type: DataTypes.INTEGER,
     allowNull: true,
     references: {

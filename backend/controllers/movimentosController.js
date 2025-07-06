@@ -5,6 +5,7 @@ const Servicos = require('../models/Servicos');
 const CondicaoPagamento = require('../models/CondicaoDePagamento');
 const MeioPagamento = require('../models/MeioDePagamento');
 const Status = require('../models/Status');
+const { Op } = require('sequelize');
 
 // GET: Listar todos os movimentos
 const listarMovimentos = async (req, res) => {
@@ -14,8 +15,8 @@ const listarMovimentos = async (req, res) => {
         { model: Clientes, as: 'cliente' },
         { model: Pets, as: 'pet' },
         { model: Servicos, as: 'servico' },
-        { model: CondicaoPagamento, as: 'condicaoPagamento' },
-        { model: MeioPagamento, as: 'meioPagamento' },
+        { model: CondicaoPagamento, as: 'condicaoDePagamento' },
+        { model: MeioPagamento, as: 'meioDePagamento' },
         { model: Status, as: 'status' }
       ]
     });
@@ -26,10 +27,9 @@ const listarMovimentos = async (req, res) => {
   }
 };
 
-// POST: Criar um novo movimento
+// POST: Criar novo movimento
 const criarMovimento = async (req, res) => {
-  console.log('🧾 Dados recebidos no backend:', req.body);
-  let {
+  const {
     data_lancamento,
     data_movimento,
     clienteId,
@@ -45,44 +45,30 @@ const criarMovimento = async (req, res) => {
   } = req.body;
 
   try {
-    // Validações básicas
     if (!data_lancamento || !clienteId || !petId || !servicoId || !condicaoPagamentoId || !meioPagamentoId || !statusId) {
       return res.status(400).json({ erro: 'Campos obrigatórios ausentes.' });
     }
 
-    // Calcula data de vencimento conforme a regra
-    let data_vencimento;
+    // Calcula vencimento com base na condição
     const condicaoId = parseInt(condicaoPagamentoId);
+    let data_vencimento;
 
     if (condicaoId === 2) {
-      // 10 do mês seguinte
       const lanc = new Date(data_lancamento);
-      let ano = lanc.getFullYear();
-      let mes = lanc.getMonth() + 1;
-
-      if (mes === 12) {
-        mes = 1;
-        ano++;
-      } else {
-        mes++;
-      }
-
-      const mesStr = mes.toString().padStart(2, '0');
-      data_vencimento = `${ano}-${mesStr}-10`;
+      const ano = lanc.getFullYear();
+      const mes = lanc.getMonth() + 2;
+      data_vencimento = new Date(ano, mes - 1, 10).toISOString().split('T')[0];
     } else {
       data_vencimento = data_lancamento;
     }
 
-    // Garante que valor é float
-    const valorNumerico = parseFloat(valor) || 0;
-
-    const novoMovimento = await Movimentos.create({
+    const movimento = await Movimentos.create({
       data_lancamento,
       data_movimento,
       clienteId,
       petId,
       servicoId,
-      valor: valorNumerico,
+      valor: parseFloat(valor) || 0,
       condicaoPagamentoId,
       meioPagamentoId,
       data_vencimento,
@@ -92,17 +78,14 @@ const criarMovimento = async (req, res) => {
       tabelaDePrecosId: tabelaDePrecosId || null
     });
 
-    res.status(201).json(novoMovimento);
+    res.status(201).json(movimento);
   } catch (error) {
     console.error('Erro ao criar movimento:', error);
-    if (error.name === 'SequelizeValidationError') {
-      return res.status(400).json({ erro: 'Erro de validação', detalhes: error.errors });
-    }
     res.status(500).json({ erro: 'Erro ao criar movimento.' });
   }
 };
 
-// PUT: Atualizar um movimento existente
+// PUT: Atualizar movimento existente
 const atualizarMovimento = async (req, res) => {
   const { id } = req.params;
   const {
@@ -133,27 +116,24 @@ const atualizarMovimento = async (req, res) => {
       clienteId,
       petId,
       servicoId,
-      valor,
+      valor: parseFloat(valor) || 0,
       condicaoPagamentoId,
       meioPagamentoId,
       data_vencimento,
       data_liquidacao: data_liquidacao || null,
       observacao: observacao || null,
       statusId,
-      tabelaDePrecosId
+      tabelaDePrecosId: tabelaDePrecosId || null
     });
 
     res.status(200).json(movimento);
   } catch (error) {
     console.error('Erro ao atualizar movimento:', error);
-    if (error.name === 'SequelizeValidationError') {
-      return res.status(400).json({ erro: 'Erro de validação', detalhes: error.errors });
-    }
     res.status(500).json({ erro: 'Erro ao atualizar movimento.' });
   }
 };
 
-// DELETE: Soft delete de um movimento
+// DELETE: Soft delete
 const deletarMovimento = async (req, res) => {
   const { id } = req.params;
 
@@ -163,7 +143,7 @@ const deletarMovimento = async (req, res) => {
       return res.status(404).json({ erro: 'Movimento não encontrado.' });
     }
 
-    await movimento.destroy(); // Soft delete
+    await movimento.destroy();
     res.status(204).send();
   } catch (error) {
     console.error('Erro ao deletar movimento:', error);

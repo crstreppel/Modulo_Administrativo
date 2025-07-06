@@ -7,7 +7,8 @@ const CondicaoDePagamento = require('./CondicaoDePagamento');
 const Meio_de_pagamento = require('./MeioDePagamento');
 const Pets = require('./Pets');
 const TabelaDePrecos = require('./TabelaDePrecos');
-const Movimentos = require('./Movimentos'); // <-- Novo
+const Movimentos = require('./Movimentos');
+const Adiantamentos = require('./Adiantamento');
 
 /* ------------------------------------------------------------------
  * RELACIONAMENTOS COM STATUS
@@ -215,7 +216,7 @@ Servicos.hasMany(Movimentos, {
 
 Movimentos.belongsTo(CondicaoDePagamento, {
   foreignKey: 'condicaoPagamentoId',
-  as: 'condicaoDePagamento',
+  as: 'condicaoPagamento',
 });
 CondicaoDePagamento.hasMany(Movimentos, {
   foreignKey: 'condicaoPagamentoId',
@@ -230,6 +231,7 @@ Meio_de_pagamento.hasMany(Movimentos, {
   foreignKey: 'meioPagamentoId',
   as: 'movimentos',
 });
+
 Movimentos.belongsTo(TabelaDePrecos, {
   foreignKey: 'tabelaDePrecosId',
   as: 'tabelaDePreco',
@@ -237,6 +239,18 @@ Movimentos.belongsTo(TabelaDePrecos, {
 TabelaDePrecos.hasMany(Movimentos, {
   foreignKey: 'tabelaDePrecosId',
   as: 'movimentos',
+});
+
+/* ------------------------------------------------------------------
+ * RELACIONAMENTO ADIANTAMENTOS ↔ PETS (1:1)
+ * ----------------------------------------------------------------*/
+Adiantamentos.belongsTo(Pets, {
+  foreignKey: 'petId',
+  as: 'pet',
+});
+Pets.hasOne(Adiantamentos, {
+  foreignKey: 'petId',
+  as: 'adiantamento',
 });
 
 /* ------------------------------------------------------------------
@@ -252,5 +266,6 @@ module.exports = {
   Meio_de_pagamento,
   Pets,
   TabelaDePrecos,
-  Movimentos, // <-- Novo!
+  Movimentos,
+  Adiantamentos,
 };
