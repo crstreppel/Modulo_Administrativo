@@ -5,11 +5,22 @@ const Meio_de_pagamento = require('../models/MeioDePagamento');
 const Racas = require('../models/Racas');
 const Pets = require('../models/Pets');
 const Status = require('../models/Status');
+const { Op } = require('sequelize');
 
-// GET: Listar todos os registros de preços
+// GET: Listar todos os registros ou filtrar por petId, racaId, servicoId
 const listarTabelaDePrecos = async (req, res) => {
   try {
+    const { petId, racaId, servicoId } = req.query;
+    const where = {};
+
+    if (petId) where.petId = petId;
+    if (racaId) where.racaId = racaId;
+    if (servicoId) where.servicoId = servicoId;
+
+    where.deletedAt = null;
+
     const tabelaDePrecos = await TabelaDePrecos.findAll({
+      where,
       include: [
         { model: Servicos, as: 'servico' },
         { model: CondicaoDePagamento, as: 'condicaoDePagamento' },
@@ -19,6 +30,7 @@ const listarTabelaDePrecos = async (req, res) => {
         { model: Status, as: 'status' }
       ]
     });
+
     res.status(200).json(tabelaDePrecos);
   } catch (error) {
     console.error('Erro ao listar tabela de preços:', error);
@@ -26,20 +38,19 @@ const listarTabelaDePrecos = async (req, res) => {
   }
 };
 
-// GET: Buscar tabela de preços por petId ou racaId (regra de negócio)
+// GET: Buscar tabela por petId e servicoId com fallback para racaId
 const buscarTabelaPorPetOuRaca = async (req, res) => {
-  const { petId } = req.query;
+  const { petId, servicoId } = req.query;
+
+  if (!petId) return res.status(400).json({ erro: 'Parâmetro petId é obrigatório.' });
+  if (!servicoId) return res.status(400).json({ erro: 'Parâmetro servicoId é obrigatório.' });
 
   try {
     const pet = await Pets.findByPk(petId);
+    if (!pet) return res.status(404).json({ erro: 'Pet não encontrado.' });
 
-    if (!pet) {
-      return res.status(404).json({ erro: 'Pet não encontrado.' });
-    }
-
-    // Primeiro, tenta encontrar tabelas ligadas diretamente ao pet
     const tabelasPorPet = await TabelaDePrecos.findAll({
-      where: { petId },
+      where: { petId, servicoId, deletedAt: null },
       include: [
         { model: Servicos, as: 'servico' },
         { model: CondicaoDePagamento, as: 'condicaoDePagamento' },
@@ -53,9 +64,8 @@ const buscarTabelaPorPetOuRaca = async (req, res) => {
       return res.status(200).json(tabelasPorPet);
     }
 
-    // Se não encontrou por petId, busca por racaId do pet
     const tabelasPorRaca = await TabelaDePrecos.findAll({
-      where: { racaId: pet.racaId },
+      where: { racaId: pet.racaId, servicoId, deletedAt: null },
       include: [
         { model: Servicos, as: 'servico' },
         { model: CondicaoDePagamento, as: 'condicaoDePagamento' },
@@ -66,14 +76,45 @@ const buscarTabelaPorPetOuRaca = async (req, res) => {
     });
 
     return res.status(200).json(tabelasPorRaca);
-
   } catch (error) {
     console.error('Erro ao buscar tabela de preços por pet/raca:', error);
     res.status(500).json({ erro: 'Erro ao buscar tabela de preços.' });
   }
 };
 
-// POST: Criar um novo registro de preço
+// NOVO: Verificar se já existe entrada para pet OU raça com condicaoPagamento e meioPagamento
+const verificarEntrada = async (req, res) => {
+  const { petId, condicaoDePagamentoId, meioDePagamentoId } = req.query;
+
+  if (!petId || !condicaoDePagamentoId || !meioDePagamentoId) {
+    return res.status(400).json({ erro: 'Parâmetros petId, condicaoDePagamentoId e meioDePagamentoId são obrigatórios.' });
+  }
+
+  try {
+    const pet = await Pets.findByPk(petId);
+    if (!pet) return res.status(404).json({ erro: 'Pet não encontrado.' });
+
+    const entrada = await TabelaDePrecos.findOne({
+      where: {
+        deletedAt: null,
+        condicaoDePagamentoId,
+        meioDePagamentoId,
+        [Op.or]: [
+          { petId },
+          { racaId: pet.racaId }
+        ]
+      }
+    });
+
+    if (entrada) return res.json({ existe: true });
+    return res.json({ existe: false, racaId: pet.racaId });
+  } catch (error) {
+    console.error('Erro ao verificar entrada:', error);
+    res.status(500).json({ erro: 'Erro ao verificar entrada na tabela de preços.' });
+  }
+};
+
+// POST: Criar um novo registro
 const criarTabelaDePrecos = async (req, res) => {
   const { servicoId, condicaoDePagamentoId, meioDePagamentoId, racaId, petId, valorServico, statusId } = req.body;
 
@@ -89,7 +130,7 @@ const criarTabelaDePrecos = async (req, res) => {
       racaId: petId ? null : racaId,
       petId: racaId ? null : petId,
       valorServico,
-      statusId
+      statusId: statusId || 1
     });
 
     const tabelaDePrecosCompleta = await TabelaDePrecos.findByPk(novoRegistro.id, {
@@ -117,23 +158,20 @@ const atualizarTabelaDePrecos = async (req, res) => {
 
   try {
     const tabelaDePreco = await TabelaDePrecos.findByPk(id);
-
-    if (!tabelaDePreco) {
-      return res.status(404).json({ erro: 'Registro não encontrado.' });
-    }
+    if (!tabelaDePreco) return res.status(404).json({ erro: 'Registro não encontrado.' });
 
     if ((petId && racaId) || (!petId && !racaId)) {
       return res.status(400).json({ erro: 'Informe apenas petId ou racaId, mas não ambos.' });
     }
 
-    await tabelaDePreco.update({ 
-      servicoId, 
-      condicaoDePagamentoId, 
-      meioDePagamentoId, 
-      racaId: petId ? null : racaId, 
-      petId: racaId ? null : petId, 
-      valorServico, 
-      statusId 
+    await tabelaDePreco.update({
+      servicoId,
+      condicaoDePagamentoId,
+      meioDePagamentoId,
+      racaId: petId ? null : racaId,
+      petId: racaId ? null : petId,
+      valorServico,
+      statusId
     });
 
     res.status(200).json(tabelaDePreco);
@@ -143,18 +181,15 @@ const atualizarTabelaDePrecos = async (req, res) => {
   }
 };
 
-// DELETE: Excluir (soft delete) um registro
+// DELETE: Soft delete
 const deletarTabelaDePrecos = async (req, res) => {
   const { id } = req.params;
 
   try {
     const tabelaDePreco = await TabelaDePrecos.findByPk(id);
+    if (!tabelaDePreco) return res.status(404).json({ erro: 'Registro não encontrado.' });
 
-    if (!tabelaDePreco) {
-      return res.status(404).json({ erro: 'Registro não encontrado.' });
-    }
-
-    await tabelaDePreco.destroy(); // Soft delete ativado
+    await tabelaDePreco.destroy();
     res.status(204).send();
   } catch (error) {
     console.error('Erro ao deletar registro:', error);
@@ -164,8 +199,9 @@ const deletarTabelaDePrecos = async (req, res) => {
 
 module.exports = {
   listarTabelaDePrecos,
-  buscarTabelaPorPetOuRaca, // <- NOVO
+  buscarTabelaPorPetOuRaca,
   criarTabelaDePrecos,
   atualizarTabelaDePrecos,
   deletarTabelaDePrecos,
+  verificarEntrada
 };

@@ -1,5 +1,6 @@
 document.addEventListener("DOMContentLoaded", async () => {
-  await carregarStatus();
+  await carregarStatusSelect("#status");
+
 
   const form = document.getElementById("form-condicao-pagamento");
   form.addEventListener("submit", async (e) => {

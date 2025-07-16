@@ -4,6 +4,7 @@ const Pets = require('../models/Pets');
 const Servicos = require('../models/Servicos');
 const CondicaoPagamento = require('../models/CondicaoDePagamento');
 const MeioPagamento = require('../models/MeioDePagamento');
+const TabelaDePrecos = require('../models/TabelaDePrecos');
 const Status = require('../models/Status');
 const { Op } = require('sequelize');
 
@@ -17,7 +18,8 @@ const listarMovimentos = async (req, res) => {
         { model: Servicos, as: 'servico' },
         { model: CondicaoPagamento, as: 'condicaoDePagamento' },
         { model: MeioPagamento, as: 'meioDePagamento' },
-        { model: Status, as: 'status' }
+        { model: Status, as: 'status' },
+        { model: TabelaDePrecos, as: 'tabelaDePreco' }
       ]
     });
     res.status(200).json(movimentos);
@@ -45,19 +47,40 @@ const criarMovimento = async (req, res) => {
   } = req.body;
 
   try {
-    if (!data_lancamento || !clienteId || !petId || !servicoId || !condicaoPagamentoId || !meioPagamentoId || !statusId) {
+    if (!data_lancamento || !clienteId || !petId || !servicoId || !statusId) {
       return res.status(400).json({ erro: 'Campos obrigatórios ausentes.' });
     }
 
+    let condicaoId = condicaoPagamentoId;
+    let meioId = meioPagamentoId;
+    let valorServico = parseFloat(valor) || 0;
+
+    // Se tiver tabelaDePrecosId e valor NÃO for informado, puxar da tabela
+    if (tabelaDePrecosId) {
+      const tabela = await TabelaDePrecos.findByPk(tabelaDePrecosId);
+      if (!tabela) {
+        return res.status(400).json({ erro: 'Tabela de preços não encontrada.' });
+      }
+
+      // Se não veio valor manual, usa o da tabela
+      if (!valor || parseFloat(valor) === 0) {
+        valorServico = parseFloat(tabela.valorServico || tabela.preco || 0);
+      }
+
+      // Sempre sobrescreve condição e meio de pagamento da tabela
+      condicaoId = tabela.condicaoDePagamentoId;
+      meioId = tabela.meioDePagamentoId;
+    }
+
     // Calcula vencimento com base na condição
-    const condicaoId = parseInt(condicaoPagamentoId);
+    const condicaoIdNum = parseInt(condicaoId);
     let data_vencimento;
 
-    if (condicaoId === 2) {
+    if (condicaoIdNum === 2) {
       const lanc = new Date(data_lancamento);
-      const ano = lanc.getFullYear();
-      const mes = lanc.getMonth() + 2;
-      data_vencimento = new Date(ano, mes - 1, 10).toISOString().split('T')[0];
+      lanc.setMonth(lanc.getMonth() + 1);
+      lanc.setDate(10);
+      data_vencimento = lanc.toISOString().split('T')[0];
     } else {
       data_vencimento = data_lancamento;
     }
@@ -68,9 +91,9 @@ const criarMovimento = async (req, res) => {
       clienteId,
       petId,
       servicoId,
-      valor: parseFloat(valor) || 0,
-      condicaoPagamentoId,
-      meioPagamentoId,
+      valor: valorServico,
+      condicaoPagamentoId: condicaoId,
+      meioPagamentoId: meioId,
       data_vencimento,
       data_liquidacao: data_liquidacao || null,
       observacao: observacao || null,

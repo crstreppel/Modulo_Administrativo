@@ -107,7 +107,7 @@ Especie.hasMany(Racas, {
 });
 
 /* ------------------------------------------------------------------
- * RELACIONAMENTO PET ↔ CLIENTES, ESPÉCIES, RAÇAS
+ * RELACIONAMENTO PET ↔ CLIENTES, RAÇAS (sem ESPECIE)
  * ----------------------------------------------------------------*/
 Pets.belongsTo(Clientes, {
   foreignKey: 'clienteId',
@@ -115,15 +115,6 @@ Pets.belongsTo(Clientes, {
 });
 Clientes.hasMany(Pets, {
   foreignKey: 'clienteId',
-  as: 'pets',
-});
-
-Pets.belongsTo(Especie, {
-  foreignKey: 'especieId',
-  as: 'especie',
-});
-Especie.hasMany(Pets, {
-  foreignKey: 'especieId',
   as: 'pets',
 });
 

@@ -2,7 +2,6 @@ const { DataTypes } = require('sequelize');
 const { sequelize } = require('../config/db');
 const Status = require('./Status');
 const Clientes = require('./Clientes');
-const Especie = require('./Especie');
 const Racas = require('./Racas');
 
 const Pets = sequelize.define('Pets', {
@@ -20,14 +19,6 @@ const Pets = sequelize.define('Pets', {
     allowNull: false,
     references: {
       model: Clientes,
-      key: 'id',
-    }
-  },
-  especieId: {
-    type: DataTypes.INTEGER,
-    allowNull: false,
-    references: {
-      model: Especie,
       key: 'id',
     }
   },

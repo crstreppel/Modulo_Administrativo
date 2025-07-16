@@ -1,25 +1,21 @@
 const Pets = require('../models/Pets');
 const Clientes = require('../models/Clientes');
-const Especie = require('../models/Especie');
 const Racas = require('../models/Racas');
 const Status = require('../models/Status');
 
-// GET: Listar todos os pets ou filtrar por clienteId
+
+// GET: Listar pets (com filtro opcional clienteId)
 const listarPets = async (req, res) => {
   const { clienteId } = req.query;
-
   const where = {};
-  if (clienteId) {
-    where.clienteId = clienteId;
-  }
+  if (clienteId) where.clienteId = clienteId;
 
   try {
     const pets = await Pets.findAll({
       where,
       include: [
         { model: Clientes, as: 'cliente' },
-        { model: Especie, as: 'especie' },
-        { model: Racas, as: 'raca' },
+        { model: Racas, as: 'raca', include: ['especie'] }, // já puxa a espécie da raça
         { model: Status, as: 'status' }
       ]
     });
@@ -30,19 +26,35 @@ const listarPets = async (req, res) => {
   }
 };
 
-// POST: Criar um novo pet
+// POST: Criar pet com validação raça→espécie
 const criarPet = async (req, res) => {
-  const { nome, clienteId, especieId, racaId, foto, statusId } = req.body;
+  const { nome, clienteId, racaId, statusId, foto } = req.body;
+
+  if (!nome || !clienteId || !racaId || !statusId) {
+    return res.status(400).json({ erro: 'Campos obrigatórios: nome, clienteId, racaId, statusId' });
+  }
 
   try {
+    const cliente = await Clientes.findByPk(clienteId);
+    if (!cliente) return res.status(400).json({ erro: 'Cliente não encontrado' });
+
+    const raca = await Racas.findByPk(racaId, { include: ['especie'] });
+    if (!raca) return res.status(400).json({ erro: 'Raça não encontrada' });
+
+    const status = await Status.findByPk(statusId);
+    if (!status) return res.status(400).json({ erro: 'Status não encontrado' });
+
+    // Aqui a validação raça ↔ espécie rola, se quiser validar espécie informada, mas vamos seguir só pela raça
+    // Se precisar validar espécie, é só comparar com raca.especieId
+
     const novoPet = await Pets.create({
       nome,
       clienteId,
-      especieId,
       racaId,
+      statusId,
       foto,
-      statusId
     });
+
     res.status(201).json(novoPet);
   } catch (error) {
     console.error('Erro ao criar pet:', error);
@@ -50,19 +62,36 @@ const criarPet = async (req, res) => {
   }
 };
 
-// PUT: Atualizar um pet existente
+// PUT: Atualizar pet com validações
 const atualizarPet = async (req, res) => {
   const { id } = req.params;
-  const { nome, clienteId, especieId, racaId, foto, statusId } = req.body;
+  const { nome, clienteId, racaId, statusId, foto } = req.body;
+
+  if (!nome || !clienteId || !racaId || !statusId) {
+    return res.status(400).json({ erro: 'Campos obrigatórios: nome, clienteId, racaId, statusId' });
+  }
 
   try {
     const pet = await Pets.findByPk(id);
+    if (!pet) return res.status(404).json({ erro: 'Pet não encontrado.' });
 
-    if (!pet) {
-      return res.status(404).json({ erro: 'Pet não encontrado.' });
-    }
+    const cliente = await Clientes.findByPk(clienteId);
+    if (!cliente) return res.status(400).json({ erro: 'Cliente não encontrado' });
 
-    await pet.update({ nome, clienteId, especieId, racaId, foto, statusId });
+    const raca = await Racas.findByPk(racaId, { include: ['especie'] });
+    if (!raca) return res.status(400).json({ erro: 'Raça não encontrada' });
+
+    const status = await Status.findByPk(statusId);
+    if (!status) return res.status(400).json({ erro: 'Status não encontrado' });
+
+    await pet.update({
+      nome,
+      clienteId,
+      racaId,
+      statusId,
+      foto,
+    });
+
     res.status(200).json(pet);
   } catch (error) {
     console.error('Erro ao atualizar pet:', error);
@@ -70,18 +99,15 @@ const atualizarPet = async (req, res) => {
   }
 };
 
-// DELETE: Excluir (soft delete) um pet
+// DELETE: Soft delete
 const deletarPet = async (req, res) => {
   const { id } = req.params;
 
   try {
     const pet = await Pets.findByPk(id);
+    if (!pet) return res.status(404).json({ erro: 'Pet não encontrado.' });
 
-    if (!pet) {
-      return res.status(404).json({ erro: 'Pet não encontrado.' });
-    }
-
-    await pet.destroy(); // Soft delete ativado
+    await pet.destroy(); // soft delete via paranoid
     res.status(204).send();
   } catch (error) {
     console.error('Erro ao deletar pet:', error);

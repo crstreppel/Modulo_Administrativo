@@ -2,11 +2,32 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Cadastro de Movimentos</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Cadastro de Movimento</title>
   <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
   <link rel="stylesheet" href="../css/global.css" />
   <link rel="stylesheet" href="./css/cad_movimentos.css" />
+  <style>
+    .hidden { display: none; }
+    #modal-confirmacao {
+      position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+      background: rgba(0,0,0,0.6);
+      display: none; justify-content: center; align-items: center;
+      z-index: 999;
+    }
+    #modal-confirmacao .modal-content {
+      background: #fff; padding: 2rem; border-radius: 10px;
+      text-align: center; max-width: 400px;
+      box-shadow: 0 0 10px #000;
+    }
+    #modal-confirmacao button {
+      margin: 0.5rem; padding: 0.5rem 1rem;
+      border-radius: 6px; border: none; cursor: pointer;
+    }
+    #modal-confirmacao .pet-btn { background: #007bff; color: #fff; }
+    #modal-confirmacao .raca-btn { background: #28a745; color: #fff; }
+    #modal-confirmacao .cancel-btn { background: #ccc; }
+  </style>
 </head>
 <body>
   <main>
@@ -16,15 +37,20 @@
       <input type="date" id="data_lancamento" name="data_lancamento" required />
 
       <label for="cliente">Cliente:</label>
-      <select id="cliente" required></select>
+      <select id="cliente" required>
+        <option value="">Selecione o cliente</option>
+      </select>
 
       <label for="pet">Pet:</label>
-      <select id="pet" required disabled></select>
+      <select id="pet" required disabled>
+        <option value="">Selecione o pet</option>
+      </select>
 
       <label for="servico">Serviço:</label>
-      <select id="servico" required></select>
+      <select id="servico" required>
+        <option value="">Selecione o serviço</option>
+      </select>
 
-      <!-- Container para renderizar a lista interativa da tabela de preços -->
       <div id="tabela-precos">
         <label for="tabelaDePrecos">Tabela de Preços:</label>
         <select id="tabelaDePrecos" required disabled>
@@ -34,20 +60,39 @@
       </div>
 
       <label for="valor">Valor:</label>
-      <input type="number" id="valor" name="valor" required />
-
-      <label for="status">Status:</label>
-      <select id="status" required></select>
+      <input type="number" id="valor" name="valor" required min="0" step="0.01" />
 
       <label for="condicaoPagamento">Condição de Pagamento:</label>
-      <select id="condicaoPagamento" required></select>
+      <select id="condicaoPagamento" required>
+        <option value="">Selecione a condição de pagamento</option>
+      </select>
 
       <label for="meioPagamento">Meio de Pagamento:</label>
-      <select id="meioPagamento" required></select>
+      <select id="meioPagamento" required>
+        <option value="">Selecione o meio de pagamento</option>
+      </select>
+
+      <div class="hidden">
+        <label for="status">Status:</label>
+        <select id="status" name="status" >
+          <option value="">Selecione o status</option>
+        </select>
+      </div>
 
       <button type="submit">Salvar Movimento</button>
     </form>
   </main>
+
+  <div id="modal-confirmacao">
+    <div class="modal-content">
+      <p>Não existe entrada na tabela de preços com os dados informados.</p>
+      <p>Deseja criar uma nova entrada?</p>
+      <button class="pet-btn" id="criarParaPet">Criar para o PET</button>
+      <button class="raca-btn" id="criarParaRaca">Criar para a RAÇA</button>
+      <button class="cancel-btn" id="cancelarCriacao">Cancelar</button>
+    </div>
+  </div>
+
   <script src="../js/utils.js"></script>
   <script src="./js/cad_movimentos.js"></script>
 </body>

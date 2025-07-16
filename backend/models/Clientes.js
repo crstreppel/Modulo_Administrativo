@@ -53,6 +53,10 @@ const Clientes = sequelize.define('Clientes', {
     type: DataTypes.BOOLEAN,
     defaultValue: false,
   },
+  link_maps: {
+    type: DataTypes.STRING,
+    allowNull: true, // Pode ser nulo se não for gerado no momento do cadastro
+  },
   statusId: {
     type: DataTypes.INTEGER,
     allowNull: false,

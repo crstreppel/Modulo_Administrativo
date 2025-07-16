@@ -1,5 +1,5 @@
 document.addEventListener("DOMContentLoaded", async () => {
-  await carregarStatus();
+  await carregarStatusSelect("#status");
   configurarBotaoMapa();
   configurarAdicaoRedeSocial();
 
@@ -20,18 +20,16 @@ document.addEventListener("DOMContentLoaded", async () => {
     const statusId = document.getElementById("status").value;
     const aceitaLembreteBanho = document.getElementById("aceita-lembrete").checked;
 
-    // Captura das redes sociais
+    // Redes sociais
     const redes = Array.from(document.getElementsByName("redesSociais[]"))
       .map(input => input.value.trim())
       .filter(link => link !== "");
 
-    // Validação de CPF
-    //if (!validarCPF(cpf)) {
-    //  alert("CPF inválido.");
-    //  return;
-   // }
+    // Montar link do Google Maps
+    const link_maps = gerarLinkMaps(endereco, numero, bairro, cidade);
 
-   console.log({ cidade, estado, pais });
+    // Jogar no input hidden (caso esteja sendo enviado por FormData)
+    document.getElementById("link_maps").value = link_maps;
 
     try {
       const response = await axios.post("http://localhost:3000/api/clientes", {
@@ -46,7 +44,8 @@ document.addEventListener("DOMContentLoaded", async () => {
         cpf,
         statusId,
         aceitaLembreteBanho,
-        redesSociais: redes
+        redesSociais: redes,
+        link_maps
       });
 
       const cliente = response.data;
@@ -67,6 +66,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             <li><strong>Status ID:</strong> ${cliente.statusId}</li>
             <li><strong>Aceita Lembrete:</strong> ${cliente.aceitaLembreteBanho ? "Sim" : "Não"}</li>
             ${cliente.redesSociais?.length ? `<li><strong>Redes Sociais:</strong> ${cliente.redesSociais.join(", ")}</li>` : ""}
+            <li><strong>Google Maps:</strong> <a href="${cliente.link_maps}" target="_blank">Ver localização</a></li>
           </ul>
         </div>
       `;
@@ -79,21 +79,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   });
 });
 
-// Validação de CPF
-/*function validarCPF(cpf) {
-  cpf = cpf.replace(/[^\d]+/g, '');
-  if (cpf.length !== 11 || /^(\d)\1+$/.test(cpf)) return false;
-
-  let soma = 0;
-  for (let i = 0; i < 9; i++) soma += parseInt(cpf.charAt(i)) * (10 - i);
-  let resto = (soma * 10) % 11;
-  if (resto === 10 || resto === 11) resto = 0;
-  if (resto !== parseInt(cpf.charAt(9))) return false;
-
-  soma = 0;
-  for (let i = 0; i < 10; i++) soma += parseInt(cpf.charAt(i)) * (11 - i);
-  resto = (soma * 10) % 11;
-  if (resto === 10 || resto === 11) resto = 0;
-
-  return resto === parseInt(cpf.charAt(10));
-}*/
+// Função auxiliar: montar link do Google Maps
+function gerarLinkMaps(endereco, numero, bairro, cidade) {
+  const query = encodeURIComponent(`${endereco}, ${numero} - ${bairro}, ${cidade}`);
+  return `https://www.google.com/maps/search/?api=1&query=${query}`;
+}

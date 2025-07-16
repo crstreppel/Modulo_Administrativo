@@ -16,7 +16,8 @@ module.exports = {
         cpf,
         statusId,
         aceitaLembreteBanho,
-        redesSociais
+        redesSociais,
+        link_maps // <-- novo campo
       } = req.body;
 
       console.log('Requisição recebida:', req.body);
@@ -37,7 +38,8 @@ module.exports = {
         cpf,
         statusId,
         aceitaLembreteBanho,
-        redesSociais
+        redesSociais,
+        link_maps // <-- salva no banco
       });
 
       const status = await Status.findByPk(statusId);
@@ -75,7 +77,8 @@ module.exports = {
         cpf,
         statusId,
         aceitaLembreteBanho,
-        redesSociais
+        redesSociais,
+        link_maps // <-- novo campo
       } = req.body;
 
       const cliente = await Clientes.findByPk(id);
@@ -95,6 +98,7 @@ module.exports = {
       cliente.statusId = statusId || cliente.statusId;
       cliente.aceitaLembreteBanho = aceitaLembreteBanho ?? cliente.aceitaLembreteBanho;
       cliente.redesSociais = redesSociais || cliente.redesSociais;
+      cliente.link_maps = link_maps || cliente.link_maps; // <-- atualiza se vier no body
 
       await cliente.save();
 
