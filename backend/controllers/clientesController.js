@@ -2,115 +2,97 @@ const Clientes = require('../models/Clientes');
 const Status = require('../models/Status');
 
 module.exports = {
-  async criarCliente(req, res) {
+  async criar(req, res) {
     try {
       const {
         nome,
         telefone,
         endereco,
         numero,
+        complemento,
         bairro,
-        cidade,
-        estado,
-        pais,
+        cep,
         cpf,
-        statusId,
         aceitaLembreteBanho,
-        redesSociais,
-        link_maps // <-- novo campo
+        clienteEsporadico,
+        dataConversaoParaFixo,
+        link_maps,
       } = req.body;
 
-      console.log('Requisição recebida:', req.body);
-
-      if (!nome || !telefone || !endereco || !numero || !bairro || !cpf || !statusId) {
-        return res.status(400).json({ erro: 'Todos os campos obrigatórios devem ser preenchidos.' });
+      if (!nome || !telefone) {
+        return res.status(400).json({ erro: 'Nome e telefone são obrigatórios.' });
       }
 
-      const novoCliente = await Clientes.create({
+      const cliente = await Clientes.create({
         nome,
         telefone,
-        endereco,
-        numero,
-        bairro,
-        cidade,
-        estado,
-        pais,
-        cpf,
-        statusId,
-        aceitaLembreteBanho,
-        redesSociais,
-        link_maps // <-- salva no banco
+        endereco: endereco || '',
+        numero: numero || '',
+        complemento: complemento || '',
+        bairro: bairro || '',
+        cidade: 'Igrejinha',
+        estado: 'RS',
+        pais: 'Brasil',
+        cep: cep || '',
+        cpf: cpf || '',
+        aceitaLembreteBanho: aceitaLembreteBanho ?? false,
+        clienteEsporadico: clienteEsporadico ?? false,
+        dataConversaoParaFixo: dataConversaoParaFixo || null,
+        link_maps: link_maps || '',
+        statusId: 1, // fixo sempre
       });
 
-      const status = await Status.findByPk(statusId);
+      const clienteComStatus = await Clientes.findByPk(cliente.id, {
+        include: [{ model: Status, as: 'status' }],
+      });
 
-      res.status(201).json({ ...novoCliente.toJSON(), status });
-    } catch (error) {
-      console.error('Erro ao criar cliente:', error);
-      res.status(500).json({ erro: 'Erro ao criar cliente.', detalhes: error.message });
+      return res.status(201).json(clienteComStatus);
+    } catch (erro) {
+      console.error('Erro ao cadastrar cliente:', erro);
+      return res.status(500).json({ erro: 'Erro ao cadastrar cliente.', detalhe: erro.message });
     }
   },
 
-  async listarClientes(req, res) {
+  async listar(req, res) {
     try {
       const clientes = await Clientes.findAll({
-        include: { model: Status, as: 'status', attributes: ['descricao'] },
+        where: { deletedAt: null },
+        include: [{ model: Status, as: 'status' }],
+        order: [['createdAt', 'DESC']],
       });
-      res.json(clientes);
-    } catch (error) {
-      res.status(500).json({ erro: 'Erro ao listar clientes.', detalhes: error.message });
+      return res.status(200).json(clientes);
+    } catch (erro) {
+      console.error('Erro ao buscar clientes:', erro);
+      return res.status(500).json({ erro: 'Erro ao buscar clientes.', detalhe: erro.message });
     }
   },
 
-  async atualizarCliente(req, res) {
+  async atualizar(req, res) {
     try {
-      const { id } = req.params;
-      const {
-        nome,
-        telefone,
-        endereco,
-        numero,
-        bairro,
-        cidade,
-        estado,
-        pais,
-        cpf,
-        statusId,
-        aceitaLembreteBanho,
-        redesSociais,
-        link_maps // <-- novo campo
-      } = req.body;
+      const id = req.params.id;
+      const dadosAtualizados = req.body;
 
       const cliente = await Clientes.findByPk(id);
       if (!cliente) {
         return res.status(404).json({ erro: 'Cliente não encontrado.' });
       }
 
-      cliente.nome = nome || cliente.nome;
-      cliente.telefone = telefone || cliente.telefone;
-      cliente.endereco = endereco || cliente.endereco;
-      cliente.numero = numero || cliente.numero;
-      cliente.bairro = bairro || cliente.bairro;
-      cliente.cidade = cidade || cliente.cidade;
-      cliente.estado = estado || cliente.estado;
-      cliente.pais = pais || cliente.pais;
-      cliente.cpf = cpf || cliente.cpf;
-      cliente.statusId = statusId || cliente.statusId;
-      cliente.aceitaLembreteBanho = aceitaLembreteBanho ?? cliente.aceitaLembreteBanho;
-      cliente.redesSociais = redesSociais || cliente.redesSociais;
-      cliente.link_maps = link_maps || cliente.link_maps; // <-- atualiza se vier no body
+      await cliente.update(dadosAtualizados);
 
-      await cliente.save();
+      const clienteAtualizado = await Clientes.findByPk(id, {
+        include: [{ model: Status, as: 'status' }],
+      });
 
-      res.json(cliente);
-    } catch (error) {
-      res.status(500).json({ erro: 'Erro ao atualizar cliente.', detalhes: error.message });
+      return res.status(200).json(clienteAtualizado);
+    } catch (erro) {
+      console.error('Erro ao atualizar cliente:', erro);
+      return res.status(500).json({ erro: 'Erro ao atualizar cliente.', detalhe: erro.message });
     }
   },
 
-  async excluirCliente(req, res) {
+  async excluir(req, res) {
     try {
-      const { id } = req.params;
+      const id = req.params.id;
 
       const cliente = await Clientes.findByPk(id);
       if (!cliente) {
@@ -118,9 +100,10 @@ module.exports = {
       }
 
       await cliente.destroy();
-      res.status(204).send();
-    } catch (error) {
-      res.status(500).json({ erro: 'Erro ao excluir cliente.', detalhes: error.message });
+      return res.status(200).json({ mensagem: 'Cliente excluído com sucesso.' });
+    } catch (erro) {
+      console.error('Erro ao excluir cliente:', erro);
+      return res.status(500).json({ erro: 'Erro ao excluir cliente.', detalhe: erro.message });
     }
-  }
+  },
 };

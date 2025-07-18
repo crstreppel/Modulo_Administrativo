@@ -1,86 +1,75 @@
 document.addEventListener("DOMContentLoaded", async () => {
-  await carregarStatusSelect("#status");
-  configurarBotaoMapa();
-  configurarAdicaoRedeSocial();
+  const form = document.getElementById("form-clientes");
+  const listaClientesDiv = document.getElementById("lista-clientes");
+  const btnMostrarCampos = document.getElementById("btn-mostrar-campos");
+  const camposExtras = document.getElementById("campos-extras");
 
-  const form = document.getElementById("form-cliente");
+  camposExtras.style.display = "none";
 
-  form.addEventListener("submit", async (e) => {
-    e.preventDefault();
-
-    const nome = document.getElementById("nome").value.trim();
-    const telefone = document.getElementById("telefone").value.trim();
-    const endereco = document.getElementById("endereco").value.trim();
-    const numero = document.getElementById("numero").value.trim();
-    const bairro = document.getElementById("bairro").value.trim();
-    const cidade = document.getElementById("cidade").value.trim();
-    const estado = document.getElementById("estado").value.trim();
-    const pais = document.getElementById("pais").value.trim();
-    const cpf = document.getElementById("cpf").value.trim();
-    const statusId = document.getElementById("status").value;
-    const aceitaLembreteBanho = document.getElementById("aceita-lembrete").checked;
-
-    // Redes sociais
-    const redes = Array.from(document.getElementsByName("redesSociais[]"))
-      .map(input => input.value.trim())
-      .filter(link => link !== "");
-
-    // Montar link do Google Maps
-    const link_maps = gerarLinkMaps(endereco, numero, bairro, cidade);
-
-    // Jogar no input hidden (caso esteja sendo enviado por FormData)
-    document.getElementById("link_maps").value = link_maps;
-
-    try {
-      const response = await axios.post("http://localhost:3000/api/clientes", {
-        nome,
-        telefone,
-        endereco,
-        numero,
-        bairro,
-        cidade,
-        estado,
-        pais,
-        cpf,
-        statusId,
-        aceitaLembreteBanho,
-        redesSociais: redes,
-        link_maps
-      });
-
-      const cliente = response.data;
-
-      document.getElementById("cliente-cadastrado").innerHTML = `
-        <div class="cliente-box">
-          <h2>🎉 Cliente cadastrado com sucesso!</h2>
-          <ul>
-            <li><strong>ID:</strong> ${cliente.id}</li>
-            <li><strong>Nome:</strong> ${cliente.nome}</li>
-            <li><strong>Telefone:</strong> ${cliente.telefone}</li>
-            <li><strong>Endereço:</strong> ${cliente.endereco}, Nº ${cliente.numero}</li>
-            <li><strong>Bairro:</strong> ${cliente.bairro}</li>
-            <li><strong>Cidade:</strong> ${cliente.cidade}</li>
-            <li><strong>Estado:</strong> ${cliente.estado}</li>
-            <li><strong>País:</strong> ${cliente.pais}</li>
-            <li><strong>CPF:</strong> ${cliente.cpf}</li>
-            <li><strong>Status ID:</strong> ${cliente.statusId}</li>
-            <li><strong>Aceita Lembrete:</strong> ${cliente.aceitaLembreteBanho ? "Sim" : "Não"}</li>
-            ${cliente.redesSociais?.length ? `<li><strong>Redes Sociais:</strong> ${cliente.redesSociais.join(", ")}</li>` : ""}
-            <li><strong>Google Maps:</strong> <a href="${cliente.link_maps}" target="_blank">Ver localização</a></li>
-          </ul>
-        </div>
-      `;
-
-      form.reset();
-    } catch (error) {
-      console.error("Erro ao cadastrar cliente:", error);
-      alert("Erro ao cadastrar cliente.");
+  btnMostrarCampos.addEventListener("click", () => {
+    if (camposExtras.style.display === "none") {
+      camposExtras.style.display = "grid";
+      btnMostrarCampos.innerText = "Ocultar campos extras";
+    } else {
+      camposExtras.style.display = "none";
+      btnMostrarCampos.innerText = "Mostrar mais opções";
     }
   });
-});
 
-// Função auxiliar: montar link do Google Maps
-function gerarLinkMaps(endereco, numero, bairro, cidade) {
-  const query = encodeURIComponent(`${endereco}, ${numero} - ${bairro}, ${cidade}`);
-  return `https://www.google.com/maps/search/?api=1&query=${query}`;
-}
+  async function listarClientes() {
+    try {
+      const response = await axios.get('http://localhost:3000/api/clientes')
+
+      const clientes = response.data;
+
+      listaClientesDiv.innerHTML = "";
+
+      clientes.forEach((cliente) => {
+        const div = document.createElement("div");
+        div.classList.add("cliente-card");
+
+        div.innerHTML = `
+          <strong>${cliente.nome}</strong><br>
+          ${cliente.telefone ? `Telefone: ${cliente.telefone}<br>` : ""}
+          ${cliente.endereco ? `Endereço: ${cliente.endereco}, ${cliente.numero} ${cliente.complemento || ""} - ${cliente.bairro}<br>` : ""}
+          ${cliente.cidade ? `Cidade: ${cliente.cidade} - ${cliente.uf}` : ""}
+        `;
+
+        listaClientesDiv.appendChild(div);
+      });
+    } catch (error) {
+      console.error("Erro ao listar clientes:", error);
+    }
+  }
+
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+
+    const dados = {
+      nome: form.nome.value,
+      telefone: form.telefone.value,
+      email: form.email.value,
+      cpf: form.cpf.value,
+      cnpj: form.cnpj.value,
+      endereco: form.endereco.value,
+      numero: form.numero.value,
+      bairro: form.bairro.value,
+      cidade: form.cidade.value,
+      uf: form.uf.value,
+      pais: form.pais.value,
+      complemento: form.complemento.value,
+      cep: form.cep.value,
+      aceitaLembreteBanho: form.aceitaLembreteBanho.checked
+    };
+
+    try {
+      await axios.post("http://localhost:3000/api/clientes", dados);
+      form.reset();
+      listarClientes();
+    } catch (error) {
+      console.error("Erro ao cadastrar cliente:", error);
+    }
+  });
+
+  listarClientes();
+});

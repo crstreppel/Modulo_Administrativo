@@ -6,69 +6,71 @@ const Clientes = sequelize.define('Clientes', {
   id: {
     type: DataTypes.INTEGER,
     primaryKey: true,
-    autoIncrement: true,
+    autoIncrement: true
   },
   nome: {
     type: DataTypes.STRING,
-    allowNull: false,
+    allowNull: false
   },
   telefone: {
     type: DataTypes.STRING,
-    allowNull: false,
+    allowNull: false
+  },
+  email: {
+    type: DataTypes.STRING
+  },
+  cpf: {
+    type: DataTypes.STRING
+  },
+  cnpj: {
+    type: DataTypes.STRING
   },
   endereco: {
-    type: DataTypes.STRING,
-    allowNull: false,
+    type: DataTypes.STRING
   },
   numero: {
-    type: DataTypes.STRING,
-    allowNull: false,
+    type: DataTypes.STRING
   },
   bairro: {
-    type: DataTypes.STRING,
-    allowNull: false,
+    type: DataTypes.STRING
+  },
+  cep: {
+    type: DataTypes.STRING
   },
   cidade: {
     type: DataTypes.STRING,
-    allowNull: true,
+    defaultValue: 'Igrejinha'
   },
   estado: {
     type: DataTypes.STRING,
-    allowNull: true,
+    defaultValue: 'RS'
   },
   pais: {
     type: DataTypes.STRING,
-    allowNull: true,
+    defaultValue: 'Brasil'
   },
-  cpf: {
-    type: DataTypes.STRING,
-    allowNull: false,
-    unique: true,
+  complemento: {
+    type: DataTypes.STRING
   },
-  redesSociais: {
-    type: DataTypes.ARRAY(DataTypes.STRING), // PostgreSQL nativo aceita array
-    allowNull: true,
+  tipoCliente: {
+    type: DataTypes.STRING
   },
-  aceitaLembreteBanho: {
+  clienteEsporadico: {
     type: DataTypes.BOOLEAN,
-    defaultValue: false,
-  },
-  link_maps: {
-    type: DataTypes.STRING,
-    allowNull: true, // Pode ser nulo se não for gerado no momento do cadastro
+    defaultValue: false
   },
   statusId: {
     type: DataTypes.INTEGER,
+    defaultValue: 1,
     allowNull: false,
     references: {
       model: Status,
-      key: 'id',
+      key: 'id'
     }
   }
 }, {
-  tableName: 'clientes',
-  timestamps: true,
   paranoid: true,
+  tableName: 'clientes'
 });
 
 module.exports = Clientes;
