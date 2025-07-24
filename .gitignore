@@ -130,3 +130,6 @@ credentials.json
 /Pods/
 *.xcworkspace
 !default.xcworkspace
+
+# diversos
+/melhorias/
