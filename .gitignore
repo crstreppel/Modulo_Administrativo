@@ -133,3 +133,4 @@ credentials.json
 
 # diversos
 /melhorias/
+/backend/config/db.js

@@ -85,6 +85,12 @@ const criarMovimento = async (req, res) => {
       data_vencimento = data_lancamento;
     }
 
+    // Se for um pagamento ADIANTADO (condição 3) mas não usando saldo (meio diferente de 3), define data_liquidacao
+    let data_liquidacao_calc = data_liquidacao || null;
+    if (parseInt(condicaoId) === 3 && parseInt(meioId) !== 3) {
+      data_liquidacao_calc = data_movimento || data_lancamento;
+    }
+
     const movimento = await Movimentos.create({
       data_lancamento,
       data_movimento,
@@ -95,7 +101,7 @@ const criarMovimento = async (req, res) => {
       condicaoPagamentoId: condicaoId,
       meioPagamentoId: meioId,
       data_vencimento,
-      data_liquidacao: data_liquidacao || null,
+      data_liquidacao: data_liquidacao_calc,
       observacao: observacao || null,
       statusId,
       tabelaDePrecosId: tabelaDePrecosId || null

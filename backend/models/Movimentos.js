@@ -8,6 +8,7 @@ const CondicaoPagamento = require('./CondicaoDePagamento');
 const MeioPagamento = require('./MeioDePagamento');
 const Status = require('./Status');
 const TabelaDePrecos = require('./TabelaDePrecos');
+const Adiantamentos = require('./Adiantamento');
 
 const Movimentos = sequelize.define('Movimentos', {
   id: {
@@ -93,6 +94,14 @@ const Movimentos = sequelize.define('Movimentos', {
     references: {
       model: Status,
       key: 'id',
+    }
+  },
+  adiantamentoId: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+    references: {
+      model: Adiantamentos,
+      key: 'id'
     }
   }
 }, {

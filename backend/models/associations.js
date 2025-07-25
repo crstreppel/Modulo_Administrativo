@@ -231,6 +231,14 @@ TabelaDePrecos.hasMany(Movimentos, {
   foreignKey: 'tabelaDePrecosId',
   as: 'movimentos',
 });
+Movimentos.belongsTo(Adiantamentos, {
+  foreignKey: 'adiantamentoId',
+  as: 'adiantamento'
+});
+Adiantamentos.hasMany(Movimentos, {
+  foreignKey: 'adiantamentoId',
+  as: 'movimentos'
+});
 
 /* ------------------------------------------------------------------
  * RELACIONAMENTO ADIANTAMENTOS ↔ PETS (1:1)
