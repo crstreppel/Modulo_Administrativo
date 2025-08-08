@@ -1,3 +1,5 @@
+// === controller: movimentosController.js ===
+
 const Movimentos = require('../models/Movimentos');
 const Clientes = require('../models/Clientes');
 const Pets = require('../models/Pets');
@@ -8,7 +10,6 @@ const TabelaDePrecos = require('../models/TabelaDePrecos');
 const Status = require('../models/Status');
 const { Op } = require('sequelize');
 
-// GET: Listar todos os movimentos
 const listarMovimentos = async (req, res) => {
   try {
     const movimentos = await Movimentos.findAll({
@@ -29,7 +30,6 @@ const listarMovimentos = async (req, res) => {
   }
 };
 
-// POST: Criar novo movimento
 const criarMovimento = async (req, res) => {
   const {
     data_lancamento,
@@ -55,24 +55,16 @@ const criarMovimento = async (req, res) => {
     let meioId = meioPagamentoId;
     let valorServico = parseFloat(valor) || 0;
 
-    // Se tiver tabelaDePrecosId e valor NÃO for informado, puxar da tabela
     if (tabelaDePrecosId) {
       const tabela = await TabelaDePrecos.findByPk(tabelaDePrecosId);
-      if (!tabela) {
-        return res.status(400).json({ erro: 'Tabela de preços não encontrada.' });
-      }
-
-      // Se não veio valor manual, usa o da tabela
+      if (!tabela) return res.status(400).json({ erro: 'Tabela de preços não encontrada.' });
       if (!valor || parseFloat(valor) === 0) {
         valorServico = parseFloat(tabela.valorServico || tabela.preco || 0);
       }
-
-      // Sempre sobrescreve condição e meio de pagamento da tabela
       condicaoId = tabela.condicaoDePagamentoId;
       meioId = tabela.meioDePagamentoId;
     }
 
-    // Calcula vencimento com base na condição
     const condicaoIdNum = parseInt(condicaoId);
     let data_vencimento;
 
@@ -85,9 +77,8 @@ const criarMovimento = async (req, res) => {
       data_vencimento = data_lancamento;
     }
 
-    // Se for um pagamento ADIANTADO (condição 3) mas não usando saldo (meio diferente de 3), define data_liquidacao
     let data_liquidacao_calc = data_liquidacao || null;
-    if (parseInt(condicaoId) === 3 && parseInt(meioId) !== 3) {
+    if ((parseInt(condicaoId) === 3 && parseInt(meioId) !== 3) || parseInt(condicaoId) === 1) {
       data_liquidacao_calc = data_movimento || data_lancamento;
     }
 
@@ -114,7 +105,6 @@ const criarMovimento = async (req, res) => {
   }
 };
 
-// PUT: Atualizar movimento existente
 const atualizarMovimento = async (req, res) => {
   const { id } = req.params;
   const {
@@ -135,9 +125,7 @@ const atualizarMovimento = async (req, res) => {
 
   try {
     const movimento = await Movimentos.findByPk(id);
-    if (!movimento) {
-      return res.status(404).json({ erro: 'Movimento não encontrado.' });
-    }
+    if (!movimento) return res.status(404).json({ erro: 'Movimento não encontrado.' });
 
     await movimento.update({
       data_lancamento,
@@ -162,15 +150,12 @@ const atualizarMovimento = async (req, res) => {
   }
 };
 
-// DELETE: Soft delete
 const deletarMovimento = async (req, res) => {
   const { id } = req.params;
 
   try {
     const movimento = await Movimentos.findByPk(id);
-    if (!movimento) {
-      return res.status(404).json({ erro: 'Movimento não encontrado.' });
-    }
+    if (!movimento) return res.status(404).json({ erro: 'Movimento não encontrado.' });
 
     await movimento.destroy();
     res.status(204).send();
@@ -184,5 +169,7 @@ module.exports = {
   listarMovimentos,
   criarMovimento,
   atualizarMovimento,
-  deletarMovimento,
+  deletarMovimento
 };
+
+

@@ -7,6 +7,7 @@ const popularCondicaoDePagamento = require('./pop_tab_CondicaoDePagamento');
 const popularTabelaDePrecos = require('./pop_tab_tabeladeprecos');
 const popularClientes = require('./pop_tab_clientes');
 const popularPets = require('./pop_tab_pets');
+const pop_tab_cond_pagto_parcelas = require('./pop_tab_cond_pagto_parcelas')
 
 const { sequelize } = require('../config/db');
 
@@ -20,6 +21,8 @@ async function main() {
     await popularRacas();
     await popularMeioDePagamento();
     await popularCondicaoDePagamento();
+    await pop_tab_cond_pagto_parcelas();
+
   //  await popularTabelaDePrecos(); // << AQUI O BRABO FOI ENCAIXADO
   //  await popularClientes();
   //  await popularPets();

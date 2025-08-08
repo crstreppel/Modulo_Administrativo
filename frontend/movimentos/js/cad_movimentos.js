@@ -29,13 +29,11 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   condicaoPagamentoSelect.addEventListener("change", () => {
     const condicao = condicaoPagamentoSelect.value;
+    meioPagamentoSelect.disabled = false;
 
     if (condicao === "1" || condicao === "3") {
-      meioPagamentoSelect.disabled = false;
       statusSelect.value = "5";
     } else {
-      meioPagamentoSelect.disabled = true;
-      meioPagamentoSelect.value = "";
       statusSelect.value = "1";
     }
   });
@@ -91,11 +89,13 @@ document.addEventListener("DOMContentLoaded", async () => {
     tabela.forEach(item => {
       const preco = parseFloat(item.valorServico || item.preco || 0);
       const descricao = item.servico?.descricao || "Sem descrição";
+      const condicao = item.condicaoDePagamento?.descricao || `Cond. ${item.condicaoDePagamentoId || "?"}`;
+      const meio = item.meioDePagamento?.descricao || `Meio ${item.meioDePagamentoId || "?"}`;
 
       if (!isNaN(preco)) {
         const option = document.createElement("option");
         option.value = item.id;
-        option.textContent = `R$ ${preco.toFixed(2)} - ${descricao}`;
+        option.textContent = `${descricao} - R$ ${preco.toFixed(2)} - ${condicao} - ${meio}`;
         option.dataset.preco = preco;
         tabelaSelect.appendChild(option);
       }
@@ -114,13 +114,11 @@ document.addEventListener("DOMContentLoaded", async () => {
       if (itemSelecionado) {
         condicaoPagamentoSelect.value = itemSelecionado.condicaoDePagamentoId;
         meioPagamentoSelect.value = itemSelecionado.meioDePagamentoId;
+        meioPagamentoSelect.disabled = false;
 
         if (itemSelecionado.condicaoDePagamentoId === 1 || itemSelecionado.condicaoDePagamentoId === 3) {
-          meioPagamentoSelect.disabled = false;
           statusSelect.value = "5";
         } else {
-          meioPagamentoSelect.disabled = true;
-          meioPagamentoSelect.value = "";
           statusSelect.value = "1";
         }
       }
@@ -143,29 +141,50 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     const hoje = new Date();
     const dataAtual = hoje.toISOString().split("T")[0];
-    const condicaoPagamentoId = condicaoPagamentoSelect.value;
-    let data_vencimento = dataLancamentoInput.value;
+    const condicaoPagamentoId = parseInt(condicaoPagamentoSelect.value);
+    const meioPagamentoId = meioPagamentoSelect.value;
+    const petId = petSelect.value;
 
-    if (condicaoPagamentoId === "2") {
-      const venc = new Date(data_vencimento);
+    if (!petId || !condicaoPagamentoId || !meioPagamentoId) {
+      console.warn("[FORM SUBMIT] Campos obrigatórios faltando para verificação da tabela de preços");
+      alert("Preencha todos os campos antes de salvar.");
+      return;
+    }
+
+    let data_vencimento = "";
+
+    if (condicaoPagamentoId === 1) {
+      data_vencimento = dataLancamentoInput.value || dataAtual;
+    } else if (condicaoPagamentoId === 2) {
+      const venc = new Date(dataLancamentoInput.value);
       venc.setMonth(venc.getMonth() + 1);
       venc.setDate(10);
       data_vencimento = venc.toISOString().split("T")[0];
+    }
+
+    if (!data_vencimento) {
+      alert("A data de vencimento está vazia. Verifique a condição de pagamento.");
+      return;
     }
 
     const dados = {
       data_lancamento: dataLancamentoInput.value,
       data_movimento: dataAtual,
       clienteId: clienteSelect.value,
-      petId: petSelect.value,
+      petId,
       servicoId: servicoSelect.value,
       valor: parseFloat(valorInput.value) || 0,
       condicaoPagamentoId,
-      meioPagamentoId: meioPagamentoSelect.value,
+      meioPagamentoId,
       statusId: statusSelect.value,
       data_vencimento,
       tabelaDePrecosId: tabelaDePrecosIdInput.value || null,
     };
+
+    // ✅ PATCH: se for À VISTA, envia data_liquidacao junto no POST
+    if (condicaoPagamentoId === 1) {
+      dados.data_liquidacao = dataAtual;
+    }
 
     try {
       const resposta = await axios.get("http://localhost:3000/api/tabela-de-precos/verificar", {
@@ -258,3 +277,4 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
   }
 });
+

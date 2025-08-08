@@ -14,6 +14,7 @@ const meioDePagamentoRoutes = require('./routes/meioDePagamentoRoutes');
 const petsRoutes = require('./routes/petsRoutes');
 const tabelaDePrecosRoutes = require('./routes/tabelaDePrecosRoutes');
 const movimentosRoutes = require('./routes/movimentosRoutes');
+const contasAReceberRoutes = require('./routes/contasAReceberRoutes');
 
 const app = express();
 
@@ -40,6 +41,7 @@ app.use('/api/meios-de-pagamento', meioDePagamentoRoutes);
 app.use('/api/pets', petsRoutes);
 app.use('/api/tabela-de-precos', tabelaDePrecosRoutes);
 app.use('/api/movimentos', movimentosRoutes);
+app.use('/api/contas-a-receber', contasAReceberRoutes); // Corrigida a rota, typo arrumado
 
 // Inicializa servidor
 const PORT = 3000;

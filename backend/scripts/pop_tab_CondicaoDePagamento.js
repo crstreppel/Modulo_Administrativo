@@ -22,7 +22,10 @@ async function popularCondicoesDePagamento() {
       { id: 2, descricao: '7 DIAS', statusId: statusAtivo.id },
       { id: 3, descricao: 'ADIANTAMENTO', statusId: statusAtivo.id },
       { id: 4, descricao: '14 DIAS', statusId: statusAtivo.id },
-      { id: 5, descricao: '30 DIAS', statusId: statusAtivo.id }
+      { id: 5, descricao: '30 DIAS', statusId: statusAtivo.id },
+      { id: 6, descricao: '15,30 DIAS', statusId: statusAtivo.id },
+      { id: 7, descricao: '15,30,45 DIAS', statusId: statusAtivo.id }
+
     ];
 
     // 4. Inserção com bulkCreate
