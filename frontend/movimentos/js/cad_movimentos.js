@@ -142,7 +142,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     const hoje = new Date();
     const dataAtual = hoje.toISOString().split("T")[0];
     const condicaoPagamentoId = parseInt(condicaoPagamentoSelect.value);
-    const meioPagamentoId = meioPagamentoSelect.value;
+    const meioPagamentoId = parseInt(meioPagamentoSelect.value); // 🔧 garantir número
     const petId = petSelect.value;
 
     if (!petId || !condicaoPagamentoId || !meioPagamentoId) {
@@ -153,22 +153,35 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     let data_vencimento = "";
 
+    // À vista => vencimento = data do lançamento
     if (condicaoPagamentoId === 1) {
       data_vencimento = dataLancamentoInput.value || dataAtual;
-    } else if (condicaoPagamentoId === 2) {
-      const venc = new Date(dataLancamentoInput.value);
+    }
+    // Parcelado mensal (exemplo) => dia 10 do próximo mês
+    else if (condicaoPagamentoId === 2) {
+      const venc = new Date(dataLancamentoInput.value || dataAtual);
       venc.setMonth(venc.getMonth() + 1);
       venc.setDate(10);
       data_vencimento = venc.toISOString().split("T")[0];
     }
+    // Adiantamento ENTRADA (cond. 3 e meio != 3) => tratar como à vista (venc = data do lançamento)
+    else if (condicaoPagamentoId === 3 && meioPagamentoId !== 3) {
+      data_vencimento = dataLancamentoInput.value || dataAtual;
+    }
+    // Adiantamento CONSUMO (cond. 3 e meio == 3) => não precisa de vencimento (não gera CR)
 
-    if (!data_vencimento) {
+    const precisaVencimento =
+      condicaoPagamentoId === 1 ||
+      condicaoPagamentoId === 2 ||
+      (condicaoPagamentoId === 3 && meioPagamentoId !== 3);
+
+    if (precisaVencimento && !data_vencimento) {
       alert("A data de vencimento está vazia. Verifique a condição de pagamento.");
       return;
     }
 
     const dados = {
-      data_lancamento: dataLancamentoInput.value,
+      data_lancamento: dataLancamentoInput.value || dataAtual,
       data_movimento: dataAtual,
       clienteId: clienteSelect.value,
       petId,
@@ -177,12 +190,12 @@ document.addEventListener("DOMContentLoaded", async () => {
       condicaoPagamentoId,
       meioPagamentoId,
       statusId: statusSelect.value,
-      data_vencimento,
+      data_vencimento: precisaVencimento ? data_vencimento : null,
       tabelaDePrecosId: tabelaDePrecosIdInput.value || null,
     };
 
-    // ✅ PATCH: se for À VISTA, envia data_liquidacao junto no POST
-    if (condicaoPagamentoId === 1) {
+    // Liquidar no ato quando for à vista OU entrada de adiantamento
+    if (condicaoPagamentoId === 1 || (condicaoPagamentoId === 3 && meioPagamentoId !== 3)) {
       dados.data_liquidacao = dataAtual;
     }
 
@@ -277,4 +290,3 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
   }
 });
-

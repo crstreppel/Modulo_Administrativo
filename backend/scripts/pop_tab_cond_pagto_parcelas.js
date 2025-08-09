@@ -16,7 +16,9 @@ async function popularParcelasCondicaoPagamento() {
       { id: 5, condicaoPagamentoId: 6, numero_parcela: 2, dias_para_pagamento: 30 },
       { id: 6, condicaoPagamentoId: 7, numero_parcela: 1, dias_para_pagamento: 15 },
       { id: 7, condicaoPagamentoId: 7, numero_parcela: 2, dias_para_pagamento: 30 },
-      { id: 8, condicaoPagamentoId: 7, numero_parcela: 3, dias_para_pagamento: 45 }
+      { id: 8, condicaoPagamentoId: 7, numero_parcela: 3, dias_para_pagamento: 45 },
+      { id: 9, condicaoPagamentoId: 1, numero_parcela: 1, dias_para_pagamento: 1 },
+      { id: 10, condicaoPagamentoId: 3, numero_parcela: 1, dias_para_pagamento: 1 },
     ];
 
     const result = await CondicaoPagamentoParcelas.bulkCreate(parcelas, {
