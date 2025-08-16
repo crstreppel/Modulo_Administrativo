@@ -2,7 +2,6 @@ const { DataTypes } = require('sequelize');
 const { sequelize } = require('../config/db');
 const Servicos = require('./Servicos');
 const CondicaoDePagamento = require('./CondicaoDePagamento');
-const MeioDePagamento = require('./MeioDePagamento');
 const Racas = require('./Racas');
 const Pets = require('./Pets');
 const Status = require('./Status');
@@ -26,14 +25,6 @@ const TabelaDePrecos = sequelize.define('TabelaDePrecos', {
     allowNull: false,
     references: {
       model: CondicaoDePagamento,
-      key: 'id',
-    }
-  },
-  meioDePagamentoId: {
-    type: DataTypes.INTEGER,
-    allowNull: false,
-    references: {
-      model: MeioDePagamento,
       key: 'id',
     }
   },
@@ -66,7 +57,7 @@ const TabelaDePrecos = sequelize.define('TabelaDePrecos', {
     }
   }
 }, {
-  tableName: 'tabeladeprecos',
+  tableName: 'tabela_de_precos',
   timestamps: true,
   paranoid: true,
   validate: {

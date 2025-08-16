@@ -70,9 +70,6 @@ Servicos.hasMany(TabelaDePrecos, { foreignKey: 'servicoId', as: 'tabelasDePreco'
 TabelaDePrecos.belongsTo(CondicaoDePagamento, { foreignKey: 'condicaoDePagamentoId', as: 'condicaoDePagamento' });
 CondicaoDePagamento.hasMany(TabelaDePrecos, { foreignKey: 'condicaoDePagamentoId', as: 'tabelasDePreco' });
 
-TabelaDePrecos.belongsTo(Meio_de_pagamento, { foreignKey: 'meioDePagamentoId', as: 'meioDePagamento' });
-Meio_de_pagamento.hasMany(TabelaDePrecos, { foreignKey: 'meioDePagamentoId', as: 'tabelasDePreco' });
-
 TabelaDePrecos.belongsTo(Racas, { foreignKey: 'racaId', as: 'raca' });
 Racas.hasMany(TabelaDePrecos, { foreignKey: 'racaId', as: 'tabelasDePreco' });
 

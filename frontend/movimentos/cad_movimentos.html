@@ -67,14 +67,17 @@
         <option value="">Selecione a condição de pagamento</option>
       </select>
 
-      <label for="meioPagamento">Meio de Pagamento:</label>
-      <select id="meioPagamento" required>
-        <option value="">Selecione o meio de pagamento</option>
-      </select>
+      <!-- Mostra quando condicaoPagamento = 1 (à vista) ou 3 (adiantamento) -->
+      <div id="wrapper-meioPagamento" style="display:none;">
+        <label for="meioPagamento">Meio de Pagamento (à vista/adiantamento):</label>
+        <select id="meioPagamento" disabled>
+          <option value="">Selecione o meio</option>
+        </select>
+      </div>
 
       <div class="hidden">
         <label for="status">Status:</label>
-        <select id="status" name="status" >
+        <select id="status" name="status">
           <option value="">Selecione o status</option>
         </select>
       </div>
@@ -94,6 +97,6 @@
   </div>
 
   <script src="../js/utils.js"></script>
-  <script src="./js/cad_movimentos.js"></script>
+  <script src="./js/cad_movimentos.js?v=2.6"></script>
 </body>
 </html>

@@ -1,292 +1,325 @@
-document.addEventListener("DOMContentLoaded", async () => {
-  await carregarClientes();
-  await carregarStatusSelect("#status");
-  await carregarCondicoesPagamentoSelect("#condicaoPagamento");
-  await carregarMeiosPagamentoSelect("#meioPagamento");
-  await carregarServicosSelect("#servico");
+/**
+ * SISTEMA PETSHOP - MÓDULO MOVIMENTOS
+ * Arquivo: cad_movimentos.js
+ * Versão: 2.7 (padrão bruxão)
+ * - Busca Tabela de Preços por PET/RAÇA + SERVIÇO (fallback automático)
+ * - Preenche valor, condicaoPagamento e meioPagamento ao selecionar a tabela (se existir)
+ * - Exige meio de pagamento quando condicao = 1 (à vista) OU 3 (adiantamento)
+ * - Força statusId = 5 quando condicao = 1 ou 3 (UI e payload)
+ * - Blindado contra elementos inexistentes
+ */
 
-  const dataLancamentoInput = document.getElementById("data_lancamento");
-  if (dataLancamentoInput && !dataLancamentoInput.value) {
-    dataLancamentoInput.value = new Date().toISOString().split("T")[0];
+const API_BASE_URL = 'http://localhost:3000/api';
+
+// Helpers DOM seguros
+const $id = (x) => document.getElementById(x);
+const setVal = (id, v) => { const el = $id(id); if (el) el.value = v; };
+const getVal = (id) => { const el = $id(id); return el ? el.value : ''; };
+const enable = (id, on = true) => { const el = $id(id); if (el) el.disabled = !on; };
+const show = (id) => { const el = $id(id); if (el) el.style.display = ''; };
+const hide = (id) => { const el = $id(id); if (el) el.style.display = 'none'; };
+const fmtMoney = (n) => (Number(n) || 0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+
+// cache dos registros de preço por id
+const PRECO_BY_ID = new Map();
+
+document.addEventListener('DOMContentLoaded', init);
+
+async function init() {
+  try {
+    // Data padrão = hoje
+    const dt = $id('data_lancamento');
+    if (dt && !dt.value) dt.valueAsNumber = Date.now() - new Date().getTimezoneOffset()*60000;
+
+    // Carregamentos base (usa utils.js se existir; senão, fallback)
+    await carregarClientesSafe();
+    await carregarServicosSafe();
+    await carregarCondicoesSafe();
+    await carregarMeiosPagamentoSafe();
+    await carregarStatusSafe();
+
+    // Eventos
+    const cliente = $id('cliente');
+    const pet = $id('pet');
+    const servico = $id('servico');
+    const cond = $id('condicaoPagamento');
+    const tabelaSel = $id('tabelaDePrecos');
+    const form = $id('formCadastroMovimento');
+
+    if (cliente) cliente.addEventListener('change', onClienteChange);
+    if (pet) { pet.addEventListener('change', tryLoadTabelas); pet.disabled = true; }
+    if (servico) servico.addEventListener('change', tryLoadTabelas);
+    if (tabelaSel) tabelaSel.addEventListener('change', onSelecionarTabela);
+    if (cond) { cond.addEventListener('change', atualizarUImeioPagamento); atualizarUImeioPagamento(); }
+    if (form) form.addEventListener('submit', onSubmit);
+
+    wireModal();
+  } catch (err) {
+    console.error('Falha na inicialização do módulo Movimentos:', err);
+    alert('Erro ao carregar página de Movimentos.');
+  }
+}
+
+/* ===================== Carregamentos ===================== */
+
+async function carregarClientesSafe() {
+  if (typeof carregarClientes === 'function') return carregarClientes();
+  const sel = $id('cliente'); if (!sel) return;
+  const { data } = await axios.get(`${API_BASE_URL}/clientes`);
+  fillSelect(sel, data, 'nome', 'Selecione o cliente');
+}
+
+async function carregarServicosSafe() {
+  if (typeof carregarServicosSelect === 'function') return carregarServicosSelect('#servico');
+  const sel = $id('servico'); if (!sel) return;
+  const { data } = await axios.get(`${API_BASE_URL}/servicos`);
+  fillSelect(sel, data, 'descricao', 'Selecione o serviço');
+}
+
+async function carregarCondicoesSafe() {
+  if (typeof carregarCondicoesPagamentoSelect === 'function') return carregarCondicoesPagamentoSelect('#condicaoPagamento');
+  const sel = $id('condicaoPagamento'); if (!sel) return;
+  const { data } = await axios.get(`${API_BASE_URL}/condicoes-de-pagamento`);
+  fillSelect(sel, data, 'descricao', 'Selecione a condição de pagamento');
+}
+
+async function carregarMeiosPagamentoSafe() {
+  if (typeof carregarMeiosPagamentoSelect === 'function') return carregarMeiosPagamentoSelect('#meioPagamento');
+  const sel = $id('meioPagamento'); if (!sel) return;
+  const { data } = await axios.get(`${API_BASE_URL}/meios-de-pagamento`);
+  fillSelect(sel, data, 'descricao', 'Selecione o meio');
+}
+
+async function carregarStatusSafe() {
+  if (typeof carregarStatusSelect === 'function') return carregarStatusSelect('#status');
+  const sel = $id('status'); if (!sel) return;
+  const { data } = await axios.get(`${API_BASE_URL}/status`);
+  fillSelect(sel, data, 'descricao', 'Selecione o status');
+}
+
+function fillSelect(selectEl, items, labelProp, placeholder = 'Selecione...') {
+  if (!selectEl) return;
+  selectEl.innerHTML = `<option value="">${placeholder}</option>`;
+  for (const it of items) {
+    const opt = new Option(it[labelProp] ?? `ID: ${it.id}`, it.id);
+    selectEl.add(opt);
+  }
+}
+
+/* ===================== Cliente/Pet ===================== */
+
+async function onClienteChange() {
+  const clienteId = getVal('cliente');
+  const petSel = $id('pet');
+  if (!petSel) return;
+  petSel.innerHTML = `<option value="">Selecione o pet</option>`;
+  enable('pet', false);
+  if (!clienteId) return;
+
+  try {
+    const { data } = await axios.get(`${API_BASE_URL}/pets`, { params: { clienteId } });
+    fillSelect(petSel, data, 'nome', 'Selecione o pet');
+    enable('pet', true);
+  } catch (err) {
+    console.error('Erro ao carregar pets do cliente:', err);
+    alert('Erro ao carregar pets do cliente.');
+  }
+}
+
+/* ===================== Tabela de Preços ===================== */
+
+async function tryLoadTabelas() {
+  const petId = getVal('pet');
+  const servicoId = getVal('servico');
+  const tabelaSel = $id('tabelaDePrecos');
+
+  if (!tabelaSel) return;
+  tabelaSel.innerHTML = `<option value="">Selecione um pet e serviço primeiro</option>`;
+  enable('tabelaDePrecos', false);
+  setVal('tabelaDePrecosId', '');
+  if (!petId || !servicoId) return;
+
+  try {
+    const { data: resultados } = await axios.get(
+      `${API_BASE_URL}/tabela-de-precos/buscarPorPetOuRaca`,
+      { params: { petId, servicoId } }
+    );
+
+    PRECO_BY_ID.clear();
+
+    if (!Array.isArray(resultados) || resultados.length === 0) {
+      openModalCriarTabela(petId, servicoId);
+      return;
+    }
+
+    tabelaSel.innerHTML = `<option value="">Selecione uma tabela</option>`;
+    for (const tb of resultados) {
+      PRECO_BY_ID.set(tb.id, tb);
+      const origem = tb.pet ? `PET: ${tb.pet?.nome}` : tb.raca ? `RAÇA: ${tb.raca?.descricao}` : 'N/A';
+      const cond = tb.condicaoDePagamento?.descricao || `Cond. ${tb.condicaoDePagamentoId || tb.condicaoPagamentoId}`;
+      const label = `${cond} • ${fmtMoney(tb.valorServico)} • ${origem}`;
+      const opt = new Option(label, tb.id);
+      tabelaSel.add(opt);
+    }
+    enable('tabelaDePrecos', true);
+
+    if (resultados.length === 1) {
+      tabelaSel.value = resultados[0].id;
+      onSelecionarTabela();
+    }
+
+  } catch (err) {
+    console.error('Erro ao carregar tabelas de preços:', err);
+    alert('Erro ao buscar tabela de preços.');
+  }
+}
+
+function onSelecionarTabela() {
+  const id = Number(getVal('tabelaDePrecos'));
+  const tb = PRECO_BY_ID.get(id);
+  if (!tb) return;
+
+  setVal('valor', tb.valorServico);
+  setVal('tabelaDePrecosId', tb.id);
+
+  // Condição
+  const condSel = $id('condicaoPagamento');
+  if (condSel) {
+    const condId = tb.condicaoDePagamentoId || tb.condicaoPagamentoId;
+    if (condId) condSel.value = String(condId);
   }
 
-  const clienteSelect = document.getElementById("cliente");
-  const petSelect = document.getElementById("pet");
-  const servicoSelect = document.getElementById("servico");
-  const tabelaSelect = document.getElementById("tabelaDePrecos");
-  const valorInput = document.getElementById("valor");
-  const tabelaDePrecosIdInput = document.getElementById("tabelaDePrecosId");
-  const condicaoPagamentoSelect = document.getElementById("condicaoPagamento");
-  const meioPagamentoSelect = document.getElementById("meioPagamento");
-  const statusSelect = document.getElementById("status");
+  // Meio de pagamento (se vier no registro)
+  const meioSel = $id('meioPagamento');
+  if (meioSel) {
+    const meioId = tb.meioDePagamentoId || tb.meioPagamentoId;
+    if (meioId) meioSel.value = String(meioId);
+  }
 
-  const modal = document.getElementById("modal-confirmacao");
-  const modalContent = modal.querySelector(".modal-content");
+  atualizarUImeioPagamento();
+}
 
-  let dadosPendentes = null;
-  let racaIdDoPetSelecionado = null;
-  let tabelaDePrecosCompleta = [];
+/* ===================== UI/Regras: Meio de Pagamento e Status ===================== */
 
-  condicaoPagamentoSelect.addEventListener("change", () => {
-    const condicao = condicaoPagamentoSelect.value;
-    meioPagamentoSelect.disabled = false;
+function atualizarUImeioPagamento() {
+  const cond = Number(getVal('condicaoPagamento'));
+  const wrapper = $id('wrapper-meioPagamento');
+  const meioSel = $id('meioPagamento');
+  const statusSel = $id('status');
 
-    if (condicao === "1" || condicao === "3") {
-      statusSelect.value = "5";
+  if (wrapper && meioSel) {
+    if (cond === 1 || cond === 3) {
+      show('wrapper-meioPagamento');
+      meioSel.removeAttribute('disabled');
+      meioSel.setAttribute('required', 'required');
     } else {
-      statusSelect.value = "1";
-    }
-  });
-
-  clienteSelect.addEventListener("change", async () => {
-    const clienteId = clienteSelect.value;
-
-    if (!clienteId) {
-      petSelect.innerHTML = '<option value="">Selecione um cliente primeiro</option>';
-      petSelect.disabled = true;
-      resetTabelaPrecos();
-      return;
-    }
-
-    await carregarPetsDoCliente(clienteId);
-    petSelect.disabled = false;
-    resetTabelaPrecos();
-  });
-
-  petSelect.addEventListener("change", atualizarSelectTabelaDePrecos);
-  servicoSelect.addEventListener("change", atualizarSelectTabelaDePrecos);
-
-  async function atualizarSelectTabelaDePrecos() {
-    const petId = petSelect.value;
-    const servicoId = servicoSelect.value;
-    const selectedPet = petSelect.options[petSelect.selectedIndex];
-    const racaId = selectedPet?.dataset?.racaId || null;
-    racaIdDoPetSelecionado = racaId;
-
-    tabelaSelect.innerHTML = `<option value="">Carregando...</option>`;
-    tabelaSelect.disabled = true;
-    valorInput.value = "";
-    tabelaDePrecosIdInput.value = "";
-
-    if (!petId || !servicoId) {
-      tabelaSelect.innerHTML = `<option value="">Selecione um pet e serviço primeiro</option>`;
-      return;
-    }
-
-    let tabela = await consultarTabelaDePrecosPorPet(petId, servicoId);
-    if (!tabela.length && racaId) {
-      tabela = await consultarTabelaDePrecosPorRaca(racaId, servicoId);
-    }
-
-    if (!tabela.length) {
-      tabelaSelect.innerHTML = `<option value="">Nenhuma entrada encontrada</option>`;
-      return;
-    }
-
-    tabelaDePrecosCompleta = tabela;
-
-    tabelaSelect.innerHTML = `<option value="">Selecione uma entrada</option>`;
-    tabela.forEach(item => {
-      const preco = parseFloat(item.valorServico || item.preco || 0);
-      const descricao = item.servico?.descricao || "Sem descrição";
-      const condicao = item.condicaoDePagamento?.descricao || `Cond. ${item.condicaoDePagamentoId || "?"}`;
-      const meio = item.meioDePagamento?.descricao || `Meio ${item.meioDePagamentoId || "?"}`;
-
-      if (!isNaN(preco)) {
-        const option = document.createElement("option");
-        option.value = item.id;
-        option.textContent = `${descricao} - R$ ${preco.toFixed(2)} - ${condicao} - ${meio}`;
-        option.dataset.preco = preco;
-        tabelaSelect.appendChild(option);
-      }
-    });
-
-    tabelaSelect.disabled = false;
-  }
-
-  tabelaSelect.addEventListener("change", () => {
-    const selected = tabelaSelect.selectedOptions[0];
-    if (selected?.value) {
-      valorInput.value = selected.dataset.preco;
-      tabelaDePrecosIdInput.value = selected.value;
-
-      const itemSelecionado = tabelaDePrecosCompleta.find(item => item.id == selected.value);
-      if (itemSelecionado) {
-        condicaoPagamentoSelect.value = itemSelecionado.condicaoDePagamentoId;
-        meioPagamentoSelect.value = itemSelecionado.meioDePagamentoId;
-        meioPagamentoSelect.disabled = false;
-
-        if (itemSelecionado.condicaoDePagamentoId === 1 || itemSelecionado.condicaoDePagamentoId === 3) {
-          statusSelect.value = "5";
-        } else {
-          statusSelect.value = "1";
-        }
-      }
-    } else {
-      valorInput.value = "";
-      tabelaDePrecosIdInput.value = "";
-    }
-  });
-
-  function resetTabelaPrecos() {
-    tabelaSelect.innerHTML = `<option value="">Selecione um pet e serviço primeiro</option>`;
-    tabelaSelect.disabled = true;
-    valorInput.value = "";
-    tabelaDePrecosIdInput.value = "";
-  }
-
-  const form = document.getElementById("formCadastroMovimento");
-  form.addEventListener("submit", async (e) => {
-    e.preventDefault();
-
-    const hoje = new Date();
-    const dataAtual = hoje.toISOString().split("T")[0];
-    const condicaoPagamentoId = parseInt(condicaoPagamentoSelect.value);
-    const meioPagamentoId = parseInt(meioPagamentoSelect.value); // 🔧 garantir número
-    const petId = petSelect.value;
-
-    if (!petId || !condicaoPagamentoId || !meioPagamentoId) {
-      console.warn("[FORM SUBMIT] Campos obrigatórios faltando para verificação da tabela de preços");
-      alert("Preencha todos os campos antes de salvar.");
-      return;
-    }
-
-    let data_vencimento = "";
-
-    // À vista => vencimento = data do lançamento
-    if (condicaoPagamentoId === 1) {
-      data_vencimento = dataLancamentoInput.value || dataAtual;
-    }
-    // Parcelado mensal (exemplo) => dia 10 do próximo mês
-    else if (condicaoPagamentoId === 2) {
-      const venc = new Date(dataLancamentoInput.value || dataAtual);
-      venc.setMonth(venc.getMonth() + 1);
-      venc.setDate(10);
-      data_vencimento = venc.toISOString().split("T")[0];
-    }
-    // Adiantamento ENTRADA (cond. 3 e meio != 3) => tratar como à vista (venc = data do lançamento)
-    else if (condicaoPagamentoId === 3 && meioPagamentoId !== 3) {
-      data_vencimento = dataLancamentoInput.value || dataAtual;
-    }
-    // Adiantamento CONSUMO (cond. 3 e meio == 3) => não precisa de vencimento (não gera CR)
-
-    const precisaVencimento =
-      condicaoPagamentoId === 1 ||
-      condicaoPagamentoId === 2 ||
-      (condicaoPagamentoId === 3 && meioPagamentoId !== 3);
-
-    if (precisaVencimento && !data_vencimento) {
-      alert("A data de vencimento está vazia. Verifique a condição de pagamento.");
-      return;
-    }
-
-    const dados = {
-      data_lancamento: dataLancamentoInput.value || dataAtual,
-      data_movimento: dataAtual,
-      clienteId: clienteSelect.value,
-      petId,
-      servicoId: servicoSelect.value,
-      valor: parseFloat(valorInput.value) || 0,
-      condicaoPagamentoId,
-      meioPagamentoId,
-      statusId: statusSelect.value,
-      data_vencimento: precisaVencimento ? data_vencimento : null,
-      tabelaDePrecosId: tabelaDePrecosIdInput.value || null,
-    };
-
-    // Liquidar no ato quando for à vista OU entrada de adiantamento
-    if (condicaoPagamentoId === 1 || (condicaoPagamentoId === 3 && meioPagamentoId !== 3)) {
-      dados.data_liquidacao = dataAtual;
-    }
-
-    try {
-      const resposta = await axios.get("http://localhost:3000/api/tabela-de-precos/verificar", {
-        params: {
-          petId: dados.petId,
-          condicaoDePagamentoId: dados.condicaoPagamentoId,
-          meioDePagamentoId: dados.meioPagamentoId
-        }
-      });
-
-      if (resposta.data.existe) {
-        await enviarMovimento(dados);
-      } else {
-        dadosPendentes = dados;
-        abrirModalConfirmacao();
-      }
-    } catch (erro) {
-      console.error("Erro ao verificar entrada na tabela de preços:", erro);
-      alert("Erro ao verificar tabela de preços.");
-    }
-  });
-
-  async function enviarMovimento(dados) {
-    try {
-      await axios.post("http://localhost:3000/api/movimentos", dados);
-      alert("Movimento salvo com sucesso!");
-      form.reset();
-      petSelect.disabled = true;
-      resetTabelaPrecos();
-    } catch (error) {
-      console.error("Erro ao salvar movimento:", error);
-      alert("Erro ao salvar movimento.");
+      hide('wrapper-meioPagamento');
+      meioSel.value = '';
+      meioSel.setAttribute('disabled', 'disabled');
+      meioSel.removeAttribute('required');
     }
   }
 
-  function abrirModalConfirmacao() {
-    modal.style.display = "flex";
-
-    modalContent.innerHTML = `
-      <p>Não existe entrada na tabela de preços com os dados informados.</p>
-      <p>Deseja criar uma nova entrada?</p>
-      <button id="criarParaPet" class="confirm-btn">Criar para o PET</button>
-      <button id="criarParaRaca" class="confirm-btn">Criar para a RAÇA</button>
-      <button id="cancelarCriacao" class="cancel-btn">Cancelar</button>
-    `;
-
-    const btnPet = document.getElementById("criarParaPet");
-    const btnRaca = document.getElementById("criarParaRaca");
-    const btnCancelar = document.getElementById("cancelarCriacao");
-
-    btnCancelar.addEventListener("click", () => {
-      modal.style.display = "none";
-      dadosPendentes = null;
-    });
-
-    btnPet.addEventListener("click", async () => {
-      if (!dadosPendentes) return;
-      try {
-        await axios.post("http://localhost:3000/api/tabela-de-precos", {
-          petId: dadosPendentes.petId,
-          condicaoPagamentoId: dadosPendentes.condicaoPagamentoId,
-          meioPagamentoId: dadosPendentes.meioPagamentoId,
-          servicoId: dadosPendentes.servicoId,
-          valorServico: dadosPendentes.valor
-        });
-        modal.style.display = "none";
-        await enviarMovimento(dadosPendentes);
-      } catch (erro) {
-        console.error("Erro ao criar entrada para o pet:", erro);
-        alert("Erro ao criar entrada.");
-      }
-    });
-
-    btnRaca.addEventListener("click", async () => {
-      if (!dadosPendentes || !racaIdDoPetSelecionado) return;
-      try {
-        await axios.post("http://localhost:3000/api/tabela-de-precos", {
-          racaId: racaIdDoPetSelecionado,
-          condicaoPagamentoId: dadosPendentes.condicaoPagamentoId,
-          meioPagamentoId: dadosPendentes.meioPagamentoId,
-          servicoId: dadosPendentes.servicoId,
-          valorServico: dadosPendentes.valor
-        });
-        modal.style.display = "none";
-        await enviarMovimento(dadosPendentes);
-      } catch (erro) {
-        console.error("Erro ao criar entrada para a raça:", erro);
-        alert("Erro ao criar entrada.");
-      }
-    });
+  // Força status = 5 quando cond = 1 (à vista) ou 3 (adiantamento)
+  if (statusSel && (cond === 1 || cond === 3)) {
+    statusSel.value = '5';
   }
-});
+}
+
+/* ===================== Modal Criar Tabela ===================== */
+
+function wireModal() {
+  const modal = $id('modal-confirmacao');
+  if (!modal) return;
+  const btnPet = $id('criarParaPet');
+  const btnRaca = $id('criarParaRaca');
+  const btnCancel = $id('cancelarCriacao');
+
+  if (btnPet) btnPet.addEventListener('click', () => { closeModal(); alert('Abra o módulo Tabela de Preços para criar para o PET.'); });
+  if (btnRaca) btnRaca.addEventListener('click', () => { closeModal(); alert('Abra o módulo Tabela de Preços para criar para a RAÇA.'); });
+  if (btnCancel) btnCancel.addEventListener('click', closeModal);
+}
+
+function openModalCriarTabela(petId, servicoId) {
+  const modal = $id('modal-confirmacao');
+  if (!modal) return;
+  modal.style.display = 'flex';
+  modal.dataset.petId = petId;
+  modal.dataset.servicoId = servicoId;
+}
+
+function closeModal() {
+  const modal = $id('modal-confirmacao');
+  if (!modal) return;
+  modal.style.display = 'none';
+  delete modal.dataset.petId;
+  delete modal.dataset.servicoId;
+}
+
+/* ===================== Submit ===================== */
+
+async function onSubmit(e) {
+  e.preventDefault();
+
+  const data_lancamento = getVal('data_lancamento');
+  const clienteId = Number(getVal('cliente'));
+  const petId = Number(getVal('pet'));
+  const servicoId = Number(getVal('servico'));
+  const tabelaDePrecosId = Number(getVal('tabelaDePrecosId')) || null;
+  const condicaoPagamentoId = Number(getVal('condicaoPagamento'));
+  const valor = Number(getVal('valor'));
+
+  // força statusId = 5 quando cond = 1 ou 3 (mantém UI coerente)
+  let statusId = Number(getVal('status')) || null;
+  if (condicaoPagamentoId === 1 || condicaoPagamentoId === 3) {
+    statusId = 5;
+    setVal('status', '5');
+  }
+
+  const meioPagamentoId = Number(getVal('meioPagamento')) || null;
+
+  if (!data_lancamento || !clienteId || !petId || !servicoId || !condicaoPagamentoId || !valor) {
+    alert('Preencha todos os campos obrigatórios.');
+    return;
+  }
+
+  // exige meio quando 1 ou 3
+  if ((condicaoPagamentoId === 1 || condicaoPagamentoId === 3) && !meioPagamentoId) {
+    alert('Para À VISTA ou ADIANTAMENTO, selecione o meio de pagamento.');
+    return;
+  }
+
+  const payload = {
+    data_lancamento,
+    clienteId,
+    petId,
+    servicoId,
+    tabelaDePrecosId,
+    condicaoPagamentoId,
+    valor,
+    statusId
+  };
+
+  if (condicaoPagamentoId === 1 || condicaoPagamentoId === 3) {
+    payload.meioPagamentoId = meioPagamentoId; // exigido para 1 e 3
+  }
+
+  try {
+    const { data } = await axios.post(`${API_BASE_URL}/movimentos`, payload);
+    alert('Movimento salvo com sucesso!');
+    console.log('Movimento criado:', data);
+
+    // reset parcial
+    $id('formCadastroMovimento')?.reset();
+    const petSel = $id('pet');
+    if (petSel) { petSel.innerHTML = `<option value="">Selecione o pet</option>`; petSel.disabled = true; }
+    const tabSel = $id('tabelaDePrecos');
+    if (tabSel) { tabSel.innerHTML = `<option value="">Selecione um pet e serviço primeiro</option>`; tabSel.disabled = true; }
+    setVal('tabelaDePrecosId', '');
+    atualizarUImeioPagamento();
+  } catch (err) {
+    console.error('Erro ao salvar movimento:', err);
+    const msg = err?.response?.data?.erro || err?.message || 'Erro ao salvar movimento.';
+    alert(msg);
+  }
+}

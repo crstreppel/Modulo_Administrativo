@@ -2,6 +2,9 @@ const express = require('express');
 const router = express.Router();
 const movimentosController = require('../controllers/movimentosController');
 
+// GET: Relatório de movimentos (com filtros opcionais)
+router.get('/relatorio', movimentosController.relatorioMovimentos);
+
 // GET: Listar todos os movimentos
 router.get('/', movimentosController.listarMovimentos);
 

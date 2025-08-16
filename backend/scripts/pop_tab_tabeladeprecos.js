@@ -32,7 +32,6 @@ async function popularTabelaDePrecos() {
         precos.push({
           servicoId: servico.id,
           condicaoDePagamentoId: condicaoPadraoId,
-          meioDePagamentoId: meioPadraoId,
           racaId: raca.id,
           petId: null,
           valorServico: preco.toFixed(2),
@@ -46,7 +45,6 @@ async function popularTabelaDePrecos() {
         'valorServico',
         'servicoId',
         'condicaoDePagamentoId',
-        'meioDePagamentoId',
         'racaId',
         'petId',
         'statusId'

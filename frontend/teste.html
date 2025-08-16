@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>Conferência de Movimentos</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <!-- CSS global do projeto -->
+  <link rel="stylesheet" href="./css/global.css">
+  <!-- CSS específico da tela -->
+  <link rel="stylesheet" href="./css/lista_movimentos.css">
+</head>
+<body class="theme-dark">
+  <header class="app-header">
+    <h1>Conferência de Movimentos</h1>
+  </header>
+
+  <main class="container">
+    <section class="card mb-16">
+      <div class="toolbar">
+        <div class="summary">
+          <span><b id="lbl-total">0</b> registros</span>
+          <span>Total período: <b id="lbl-soma">R$ 0,00</b></span>
+        </div>
+        <div class="loading" id="loading" aria-live="polite">
+          <span class="spinner" aria-hidden="true"></span> <span>Carregando…</span>
+        </div>
+      </div>
+
+      <div class="filters">
+        <div class="field">
+          <label for="dataInicio">Data início</label>
+          <input type="date" id="dataInicio">
+        </div>
+        <div class="field">
+          <label for="dataFim">Data fim</label>
+          <input type="date" id="dataFim">
+        </div>
+        <div class="field">
+          <label for="clienteId">Cliente</label>
+          <select id="clienteId">
+            <option value="">— Todos —</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="petId">Pet</label>
+          <select id="petId" disabled>
+            <option value="">— Todos —</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="servicoId">Serviço</label>
+          <select id="servicoId">
+            <option value="">— Todos —</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="statusId">Status</label>
+          <select id="statusId">
+            <option value="">— Todos —</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button class="btn primary" id="btnBuscar">Buscar</button>
+        <button class="btn ghost" id="btnLimpar">Limpar</button>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="table-wrap">
+        <table id="tabela">
+          <thead>
+            <tr>
+              <th style="min-width:120px;">Data Lanç.</th>
+              <th style="min-width:180px;">Cliente</th>
+              <th style="min-width:160px;">Pet</th>
+              <th style="min-width:200px;">Serviço</th>
+              <th class="right" style="min-width:110px;">Valor</th>
+              <th style="min-width:180px;">Condição</th>
+              <th style="min-width:180px;">Meio</th>
+              <th style="min-width:140px;">Status</th>
+              <th style="min-width:240px;">Observação</th>
+              <th style="min-width:150px;">Ações</th>
+            </tr>
+          </thead>
+          <tbody id="tbody">
+            <tr><td colspan="10" class="empty">Use os filtros e clique <b>Buscar</b>.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <footer class="pagination">
+        <button class="btn" id="prev">◀ Anterior</button>
+        <span id="pageInfo" class="muted">página 1</span>
+        <button class="btn" id="next">Próxima ▶</button>
+        <span class="muted ml-auto">Limite</span>
+        <select id="limit" class="ml-6 w-90">
+          <option value="20">20</option>
+          <option value="50" selected>50</option>
+          <option value="100">100</option>
+        </select>
+      </footer>
+    </section>
+  </main>
+
+  <!-- Axios -->
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  <!-- JS desta tela -->
+  <script src="./js/lista_movimentos.js"></script>
+</body>
+</html>

@@ -1,7 +1,7 @@
 const TabelaDePrecos = require('../models/TabelaDePrecos');
 const Servicos = require('../models/Servicos');
 const CondicaoDePagamento = require('../models/CondicaoDePagamento');
-const Meio_de_pagamento = require('../models/MeioDePagamento');
+// REMOVIDO: const Meio_de_pagamento = require('../models/MeioDePagamento');
 const Racas = require('../models/Racas');
 const Pets = require('../models/Pets');
 const Status = require('../models/Status');
@@ -11,24 +11,23 @@ const { Op } = require('sequelize');
 const listarTabelaDePrecos = async (req, res) => {
   try {
     const { petId, racaId, servicoId } = req.query;
-    const where = {};
+    const where = { deletedAt: null };
 
     if (petId) where.petId = petId;
     if (racaId) where.racaId = racaId;
     if (servicoId) where.servicoId = servicoId;
-
-    where.deletedAt = null;
 
     const tabelaDePrecos = await TabelaDePrecos.findAll({
       where,
       include: [
         { model: Servicos, as: 'servico' },
         { model: CondicaoDePagamento, as: 'condicaoDePagamento' },
-        { model: Meio_de_pagamento, as: 'meioDePagamento' },
+        // REMOVIDO: { model: Meio_de_pagamento, as: 'meioDePagamento' },
         { model: Racas, as: 'raca' },
         { model: Pets, as: 'pet' },
         { model: Status, as: 'status' }
-      ]
+      ],
+      order: [['id', 'ASC']]
     });
 
     res.status(200).json(tabelaDePrecos);
@@ -38,67 +37,98 @@ const listarTabelaDePrecos = async (req, res) => {
   }
 };
 
-// GET: Buscar tabela por petId e servicoId com fallback para racaId
+// GET: Buscar tabela por petId e servicoId com fallback para racaId e genérico (sem vínculos)
 const buscarTabelaPorPetOuRaca = async (req, res) => {
-  const { petId, servicoId } = req.query;
+  const petId = req.query.petId;
+  const servicoId = req.query.servicoId;
 
-  if (!petId) return res.status(400).json({ erro: 'Parâmetro petId é obrigatório.' });
   if (!servicoId) return res.status(400).json({ erro: 'Parâmetro servicoId é obrigatório.' });
 
   try {
-    const pet = await Pets.findByPk(petId);
-    if (!pet) return res.status(404).json({ erro: 'Pet não encontrado.' });
+    let racaId = null;
 
-    const tabelasPorPet = await TabelaDePrecos.findAll({
-      where: { petId, servicoId, deletedAt: null },
+    if (petId) {
+      const pet = await Pets.findByPk(petId, { attributes: ['id', 'racaId'] });
+      if (!pet) return res.status(404).json({ erro: 'Pet não encontrado.' });
+      racaId = pet.racaId || null;
+    }
+
+    // where base por serviço + não-deletado
+    const whereBase = { servicoId, deletedAt: null };
+
+    // Monta o alvo:
+    // - Se tem PET e RAÇA: PET OU RAÇA OU genérico
+    // - Se tem só PET: PET OU genérico
+    // - Se não tem PET: apenas genérico
+    let whereAlvo;
+    if (petId && racaId) {
+      whereAlvo = {
+        [Op.or]: [
+          { petId },
+          { racaId },
+          { [Op.and]: [{ petId: null }, { racaId: null }] }
+        ]
+      };
+    } else if (petId && !racaId) {
+      whereAlvo = {
+        [Op.or]: [
+          { petId },
+          { [Op.and]: [{ petId: null }, { racaId: null }] }
+        ]
+      };
+    } else {
+      whereAlvo = { [Op.and]: [{ petId: null }, { racaId: null }] };
+    }
+
+    const registros = await TabelaDePrecos.findAll({
+      where: { ...whereBase, ...whereAlvo },
       include: [
         { model: Servicos, as: 'servico' },
         { model: CondicaoDePagamento, as: 'condicaoDePagamento' },
-        { model: Meio_de_pagamento, as: 'meioDePagamento' },
+        // REMOVIDO: { model: Meio_de_pagamento, as: 'meioDePagamento' },
+        { model: Racas, as: 'raca' },
         { model: Pets, as: 'pet' },
         { model: Status, as: 'status' }
       ]
     });
 
-    if (tabelasPorPet.length > 0) {
-      return res.status(200).json(tabelasPorPet);
-    }
-
-    const tabelasPorRaca = await TabelaDePrecos.findAll({
-      where: { racaId: pet.racaId, servicoId, deletedAt: null },
-      include: [
-        { model: Servicos, as: 'servico' },
-        { model: CondicaoDePagamento, as: 'condicaoDePagamento' },
-        { model: Meio_de_pagamento, as: 'meioDePagamento' },
-        { model: Racas, as: 'raca' },
-        { model: Status, as: 'status' }
-      ]
+    // Ordena por especificidade: PET > RAÇA > GENÉRICO, depois por id
+    registros.sort((a, b) => {
+      const aScore = a.petId ? 0 : a.racaId ? 1 : 2;
+      const bScore = b.petId ? 0 : b.racaId ? 1 : 2;
+      if (aScore !== bScore) return aScore - bScore;
+      return a.id - b.id;
     });
 
-    return res.status(200).json(tabelasPorRaca);
+    return res.status(200).json(registros);
   } catch (error) {
-    console.error('Erro ao buscar tabela de preços por pet/raca:', error);
+    console.error('Erro ao buscar tabela de preços por pet/raça:', error);
     res.status(500).json({ erro: 'Erro ao buscar tabela de preços.' });
   }
 };
 
-// NOVO: Verificar se já existe entrada para pet OU raça com condicaoPagamento e meioPagamento
-const verificarEntrada = async (req, res) => {
-  const { petId, condicaoDePagamentoId, meioDePagamentoId } = req.query;
+// Alias (rotas antigas que apontam para "buscarPorPetOuRaca")
+const buscarPorPetOuRaca = (req, res) => buscarTabelaPorPetOuRaca(req, res);
 
-  if (!petId || !condicaoDePagamentoId || !meioDePagamentoId) {
-    return res.status(400).json({ erro: 'Parâmetros petId, condicaoDePagamentoId e meioDePagamentoId são obrigatórios.' });
+// NOVO (sem meioPagamento): Verificar se já existe entrada para pet OU raça com condicaoDePagamento + servico
+const verificarEntrada = async (req, res) => {
+  const { petId, condicaoDePagamentoId, servicoId } = req.query;
+
+  if (!petId || !condicaoDePagamentoId || !servicoId) {
+    return res.status(400).json({
+      erro: 'Parâmetros petId, condicaoDePagamentoId e servicoId são obrigatórios.'
+    });
   }
 
   try {
-    const pet = await Pets.findByPk(petId);
+    const pet = await Pets.findByPk(petId, { attributes: ['id', 'racaId'] });
     if (!pet) return res.status(404).json({ erro: 'Pet não encontrado.' });
 
     const entrada = await TabelaDePrecos.findOne({
       where: {
         deletedAt: null,
         condicaoDePagamentoId,
-        meioDePagamentoId,
+        servicoId,
         [Op.or]: [
           { petId },
           { racaId: pet.racaId }
@@ -114,9 +144,9 @@ const verificarEntrada = async (req, res) => {
   }
 };
 
-// POST: Criar um novo registro
+// POST: Criar um novo registro (sem meioPagamento)
 const criarTabelaDePrecos = async (req, res) => {
-  const { servicoId, condicaoDePagamentoId, meioDePagamentoId, racaId, petId, valorServico, statusId } = req.body;
+  const { servicoId, condicaoDePagamentoId, racaId, petId, valorServico, statusId } = req.body;
 
   try {
     if ((petId && racaId) || (!petId && !racaId)) {
@@ -126,7 +156,6 @@ const criarTabelaDePrecos = async (req, res) => {
     const novoRegistro = await TabelaDePrecos.create({
       servicoId,
       condicaoDePagamentoId,
-      meioDePagamentoId,
       racaId: petId ? null : racaId,
       petId: racaId ? null : petId,
       valorServico,
@@ -137,7 +166,7 @@ const criarTabelaDePrecos = async (req, res) => {
       include: [
         { model: Servicos, as: 'servico' },
         { model: CondicaoDePagamento, as: 'condicaoDePagamento' },
-        { model: Meio_de_pagamento, as: 'meioDePagamento' },
+        // REMOVIDO: { model: Meio_de_pagamento, as: 'meioDePagamento' },
         { model: Racas, as: 'raca' },
         { model: Pets, as: 'pet' },
         { model: Status, as: 'status' }
@@ -151,10 +180,10 @@ const criarTabelaDePrecos = async (req, res) => {
   }
 };
 
-// PUT: Atualizar um registro existente
+// PUT: Atualizar um registro existente (sem meioPagamento)
 const atualizarTabelaDePrecos = async (req, res) => {
   const { id } = req.params;
-  const { servicoId, condicaoDePagamentoId, meioDePagamentoId, racaId, petId, valorServico, statusId } = req.body;
+  const { servicoId, condicaoDePagamentoId, racaId, petId, valorServico, statusId } = req.body;
 
   try {
     const tabelaDePreco = await TabelaDePrecos.findByPk(id);
@@ -167,7 +196,6 @@ const atualizarTabelaDePrecos = async (req, res) => {
     await tabelaDePreco.update({
       servicoId,
       condicaoDePagamentoId,
-      meioDePagamentoId,
       racaId: petId ? null : racaId,
       petId: racaId ? null : petId,
       valorServico,
@@ -200,6 +228,7 @@ const deletarTabelaDePrecos = async (req, res) => {
 module.exports = {
   listarTabelaDePrecos,
   buscarTabelaPorPetOuRaca,
+  buscarPorPetOuRaca, // alias para rotas antigas
   criarTabelaDePrecos,
   atualizarTabelaDePrecos,
   deletarTabelaDePrecos,

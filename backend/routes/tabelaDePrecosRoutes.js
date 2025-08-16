@@ -1,23 +1,31 @@
+// === routes: tabelaDePrecosRoutes.js ===
 const express = require('express');
 const router = express.Router();
-const tabelaDePrecosController = require('../controllers/TabelaDePrecosController');
 
-// GET: Listar todos os registros de preços
+// Se seu arquivo estiver como "TabelaDePrecosController.js" (T maiúsculo), troque a linha abaixo.
+const tabelaDePrecosController = require('../controllers/tabelaDePrecosController');
+
+// Listar (com filtros opcionais)
 router.get('/', tabelaDePrecosController.listarTabelaDePrecos);
 
-// GET: Verificar se existe entrada com petId + condicao + meio pagamento
-router.get('/verificar', tabelaDePrecosController.verificarEntrada); // <- NOVO
+// Verificar existência (pet/raça + condição + serviço)
+router.get('/verificar', tabelaDePrecosController.verificarEntrada);
 
-// GET: Buscar preços por pet (ou raça do pet, se necessário)
-router.get('/buscarPorPet/:petId', tabelaDePrecosController.buscarTabelaPorPetOuRaca);
+// Buscar por PET/RAÇA/GENÉRICO (principal usado pelo cad_movimentos.js)
+router.get('/buscarPorPetOuRaca', tabelaDePrecosController.buscarPorPetOuRaca);
 
-// POST: Criar novo registro de preço
+// Retrocompat: nome antigo do handler
+router.get('/buscarTabelaPorPetOuRaca', tabelaDePrecosController.buscarPorPetOuRaca);
+
+// Retrocompat: rota antiga com :petId
+router.get('/buscarPorPet/:petId', (req, res) => {
+  req.query.petId = req.params.petId;
+  return tabelaDePrecosController.buscarPorPetOuRaca(req, res);
+});
+
+// CRUD
 router.post('/', tabelaDePrecosController.criarTabelaDePrecos);
-
-// PUT: Atualizar registro por ID
 router.put('/:id', tabelaDePrecosController.atualizarTabelaDePrecos);
-
-// DELETE: Remover registro (soft delete) por ID
 router.delete('/:id', tabelaDePrecosController.deletarTabelaDePrecos);
 
 module.exports = router;
