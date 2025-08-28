@@ -9,7 +9,11 @@
  */
 
 // ==================== CONSTANTES ====================
-const API_BASE_URL = 'http://localhost:3000/api';
+// Espera que API_BASE_URL esteja definida globalmente (ex.: utils.js)
+if (typeof API_BASE_URL === 'undefined') {
+  console.error('API_BASE_URL não encontrada. Defina-a no utils.js (global) antes deste arquivo.');
+}
+
 const SELECT_CONFIG = [
   { id: 'servico', endpoint: 'servicos', prop: 'descricao' },
   { id: 'condicao-pagamento', endpoint: 'condicoes-de-pagamento', prop: 'descricao' },

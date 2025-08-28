@@ -1,102 +1,129 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Cadastro de Movimento</title>
-  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
-  <link rel="stylesheet" href="../css/global.css" />
-  <link rel="stylesheet" href="./css/cad_movimentos.css" />
+  <link rel="stylesheet" href="./css/cad_movimentos.css">
   <style>
-    .hidden { display: none; }
-    #modal-confirmacao {
-      position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-      background: rgba(0,0,0,0.6);
-      display: none; justify-content: center; align-items: center;
-      z-index: 999;
+    /* micro pro modal (independente de global.css) */
+    .hidden{display:none}
+    #modal-confirmacao{
+      position:fixed; inset:0; display:none; align-items:center; justify-content:center;
+      background:rgba(0,0,0,.45); z-index:9999;
     }
-    #modal-confirmacao .modal-content {
-      background: #fff; padding: 2rem; border-radius: 10px;
-      text-align: center; max-width: 400px;
-      box-shadow: 0 0 10px #000;
+    #modal-confirmacao .modal-card{
+      background:#fff; padding:16px; border-radius:12px; width:min(420px,94%);
+      border:1px solid #e5e7eb; box-shadow:0 10px 30px rgba(0,0,0,.15)
     }
-    #modal-confirmacao button {
-      margin: 0.5rem; padding: 0.5rem 1rem;
-      border-radius: 6px; border: none; cursor: pointer;
-    }
-    #modal-confirmacao .pet-btn { background: #007bff; color: #fff; }
-    #modal-confirmacao .raca-btn { background: #28a745; color: #fff; }
-    #modal-confirmacao .cancel-btn { background: #ccc; }
+    #modal-confirmacao .actions{display:flex; gap:8px; justify-content:flex-end; margin-top:12px}
+    #modal-confirmacao button{padding:10px 14px; border-radius:8px; border:1px solid #d1d5db; cursor:pointer}
   </style>
 </head>
 <body>
-  <main>
+  <div class="container">
     <h1>Cadastro de Movimento</h1>
-    <form id="formCadastroMovimento">
-      <label for="data_lancamento">Data Lançamento:</label>
-      <input type="date" id="data_lancamento" name="data_lancamento" required />
 
-      <label for="cliente">Cliente:</label>
-      <select id="cliente" required>
-        <option value="">Selecione o cliente</option>
-      </select>
+    <!-- IMPORTANTE: id do form para o JS v2.8 -->
+    <form id="formCadastroMovimento" autocomplete="off">
+      <div class="row">
+        <div class="form-group">
+          <label for="data_lancamento">Data do Lançamento</label>
+          <input type="date" id="data_lancamento" name="data_lancamento">
+          <div class="checkbox-inline">
+            <!-- id padronizado para o JS -->
+            <input type="checkbox" id="manter-data-lancamento" />
+            <label for="manter-data-lancamento">Manter a data informada no envio</label>
+          </div>
+          <small id="hint-data-lancamento">Desmarcado: a data do servidor (hoje) será gravada.</small>
+          <div id="msg-data-lancamento" class="msg hidden"></div>
+        </div>
 
-      <label for="pet">Pet:</label>
-      <select id="pet" required disabled>
-        <option value="">Selecione o pet</option>
-      </select>
+        <div class="form-group">
+          <label for="cliente">Cliente</label>
+          <select id="cliente" name="cliente">
+            <option value="">Selecione um cliente...</option>
+          </select>
+        </div>
+      </div>
 
-      <label for="servico">Serviço:</label>
-      <select id="servico" required>
-        <option value="">Selecione o serviço</option>
-      </select>
+      <div class="row">
+        <div class="form-group">
+          <label for="pet">Pet</label>
+          <select id="pet" name="pet" disabled>
+            <option value="">Selecione o pet</option>
+          </select>
+        </div>
 
-      <div id="tabela-precos">
-        <label for="tabelaDePrecos">Tabela de Preços:</label>
-        <select id="tabelaDePrecos" required disabled>
+        <div class="form-group">
+          <label for="servico">Serviço</label>
+          <select id="servico" name="servico">
+            <option value="">Selecione o serviço</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- IDs padronizados: tabelaDePrecos + tabelaDePrecosId -->
+      <div class="form-group">
+        <label for="tabelaDePrecos">Tabela de Preços</label>
+        <select id="tabelaDePrecos" name="tabelaDePrecos" disabled>
           <option value="">Selecione um pet e serviço primeiro</option>
         </select>
         <input type="hidden" id="tabelaDePrecosId" />
       </div>
 
-      <label for="valor">Valor:</label>
-      <input type="number" id="valor" name="valor" required min="0" step="0.01" />
+      <div class="row">
+        <div class="form-group">
+          <label for="valor">Valor (R$)</label>
+          <input type="number" id="valor" name="valor" min="0" step="0.01">
+        </div>
 
-      <label for="condicaoPagamento">Condição de Pagamento:</label>
-      <select id="condicaoPagamento" required>
-        <option value="">Selecione a condição de pagamento</option>
-      </select>
+        <div class="form-group">
+          <label for="condicaoPagamento">Condição de Pagamento</label>
+          <select id="condicaoPagamento" name="condicaoPagamento">
+            <option value="">Selecione a condição de pagamento</option>
+          </select>
+        </div>
+      </div>
 
-      <!-- Mostra quando condicaoPagamento = 1 (à vista) ou 3 (adiantamento) -->
-      <div id="wrapper-meioPagamento" style="display:none;">
-        <label for="meioPagamento">Meio de Pagamento (à vista/adiantamento):</label>
+      <!-- Campo condicional (cond 1/3) -->
+      <div class="form-group" id="wrapper-meioPagamento" style="display:none;">
+        <label for="meioPagamento">Meio de Pagamento (à vista/adiantamento)</label>
         <select id="meioPagamento" disabled>
           <option value="">Selecione o meio</option>
         </select>
       </div>
 
+      <!-- Status oculto (mantido p/ coerência com o JS) -->
       <div class="hidden">
-        <label for="status">Status:</label>
+        <label for="status">Status</label>
         <select id="status" name="status">
           <option value="">Selecione o status</option>
         </select>
       </div>
 
-      <button type="submit">Salvar Movimento</button>
+      <div class="form-actions">
+        <button type="submit">Salvar Movimento</button>
+      </div>
     </form>
-  </main>
+  </div>
 
+  <!-- Modal usado quando não há tabela encontrada -->
   <div id="modal-confirmacao">
-    <div class="modal-content">
-      <p>Não existe entrada na tabela de preços com os dados informados.</p>
-      <p>Deseja criar uma nova entrada?</p>
-      <button class="pet-btn" id="criarParaPet">Criar para o PET</button>
-      <button class="raca-btn" id="criarParaRaca">Criar para a RAÇA</button>
-      <button class="cancel-btn" id="cancelarCriacao">Cancelar</button>
+    <div class="modal-card">
+      <h3>Não encontramos Tabela de Preços</h3>
+      <p>Deseja criar uma tabela para este PET ou para a RAÇA?</p>
+      <div class="actions">
+        <button id="criarParaPet">Criar para o PET</button>
+        <button id="criarParaRaca">Criar para a RAÇA</button>
+        <button id="cancelarCriacao">Cancelar</button>
+      </div>
     </div>
   </div>
 
+  <!-- libs e scripts: carrega utils antes (se houver helpers), depois o módulo -->
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
   <script src="../js/utils.js"></script>
-  <script src="./js/cad_movimentos.js?v=2.6"></script>
+  <script src="./js/cad_movimentos.js?v=2.8"></script>
 </body>
 </html>

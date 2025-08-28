@@ -4,7 +4,7 @@ const Racas = require('./Racas');
 const Clientes = require('./Clientes');
 const Especie = require('./Especie');
 const CondicaoDePagamento = require('./CondicaoDePagamento');
-const Meio_de_pagamento = require('./MeioDePagamento');
+const MeioDePagamento = require('./MeioDePagamento');
 const Pets = require('./Pets');
 const TabelaDePrecos = require('./TabelaDePrecos');
 const Movimentos = require('./Movimentos');
@@ -31,8 +31,8 @@ Status.hasMany(Especie, { foreignKey: 'statusId', as: 'especies' });
 CondicaoDePagamento.belongsTo(Status, { foreignKey: 'statusId', as: 'status' });
 Status.hasMany(CondicaoDePagamento, { foreignKey: 'statusId', as: 'condicoesDePagamento' });
 
-Meio_de_pagamento.belongsTo(Status, { foreignKey: 'statusId', as: 'status' });
-Status.hasMany(Meio_de_pagamento, { foreignKey: 'statusId', as: 'meiosDePagamento' });
+MeioDePagamento.belongsTo(Status, { foreignKey: 'statusId', as: 'status' });
+Status.hasMany(MeioDePagamento, { foreignKey: 'statusId', as: 'meiosDePagamento' });
 
 Pets.belongsTo(Status, { foreignKey: 'statusId', as: 'status' });
 Status.hasMany(Pets, { foreignKey: 'statusId', as: 'pets' });
@@ -92,8 +92,8 @@ Servicos.hasMany(Movimentos, { foreignKey: 'servicoId', as: 'movimentos' });
 Movimentos.belongsTo(CondicaoDePagamento, { foreignKey: 'condicaoPagamentoId', as: 'condicaoPagamento' });
 CondicaoDePagamento.hasMany(Movimentos, { foreignKey: 'condicaoPagamentoId', as: 'movimentos' });
 
-Movimentos.belongsTo(Meio_de_pagamento, { foreignKey: 'meioPagamentoId', as: 'meioDePagamento' });
-Meio_de_pagamento.hasMany(Movimentos, { foreignKey: 'meioPagamentoId', as: 'movimentos' });
+Movimentos.belongsTo(MeioDePagamento, { foreignKey: 'meioPagamentoId', as: 'meioDePagamento' });
+MeioDePagamento.hasMany(Movimentos, { foreignKey: 'meioPagamentoId', as: 'movimentos' });
 
 Movimentos.belongsTo(TabelaDePrecos, { foreignKey: 'tabelaDePrecosId', as: 'tabelaDePreco' });
 TabelaDePrecos.hasMany(Movimentos, { foreignKey: 'tabelaDePrecosId', as: 'movimentos' });
@@ -139,7 +139,7 @@ module.exports = {
   Clientes,
   Especie,
   CondicaoDePagamento,
-  Meio_de_pagamento,
+  MeioDePagamento,
   Pets,
   TabelaDePrecos,
   Movimentos,

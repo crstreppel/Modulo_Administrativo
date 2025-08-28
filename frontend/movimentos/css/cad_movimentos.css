@@ -1,61 +1,110 @@
+/* Container principal */
+body {
+  font-family: sans-serif;
+  background-color: #f8f9fc;
+  margin: 0;
+  padding: 20px;
+}
+
 .container {
-  max-width: 600px;
+  max-width: 900px;
   margin: 40px auto;
   padding: 30px;
   background-color: #fff;
-  border-radius: 10px;
+  border-radius: 12px;
   box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
-  font-family: sans-serif;
 }
 
+/* Título */
 h1 {
   text-align: center;
   margin-bottom: 25px;
+  color: #222;
 }
 
+/* Layout em linhas */
+.row {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+  margin-bottom: 15px;
+}
+
+.form-group {
+  flex: 1;
+  min-width: 250px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Inputs e selects */
 form label {
-  display: block;
-  margin-top: 15px;
+  margin-bottom: 6px;
   font-weight: bold;
+  color: #333;
 }
 
 form input,
-form select,
-form textarea {
-  width: 100%;
+form select {
   padding: 10px;
-  margin-top: 5px;
-  border-radius: 5px;
+  border-radius: 6px;
   border: 1px solid #ccc;
+  font-size: 15px;
   box-sizing: border-box;
 }
 
-form textarea {
-  resize: vertical;
-  min-height: 80px;
-  
+form small {
+  color: #666;
+  font-size: 12px;
+  margin-top: 4px;
 }
 
-.row {
+/* Checkbox inline */
+.checkbox-inline {
   display: flex;
-  gap: 15px;
-  flex-wrap: wrap;
+  align-items: center;
+  margin-top: 8px;
+  gap: 8px;
 }
 
-.row > div {
-  flex: 1;
-  min-width: 0;
+/* Avisos/estado */
+.hidden { display: none !important; }
+
+.msg {
+  margin-top: 8px;
+  font-size: 12px;
+  color: #b45309;             /* amber-700 */
+  background: #fff7ed;        /* amber-50 */
+  border: 1px solid #fde68a;  /* amber-200 */
+  padding: 8px 10px;
+  border-radius: 6px;
+}
+
+/* Campos desabilitados visuais */
+input:disabled,
+select:disabled {
+  background: #f3f4f6;  /* cinzinha */
+  color: #6b7280;
+  cursor: not-allowed;
+}
+
+/* Wrapper do meio de pagamento (quando cond=1/3) */
+#wrapper-meioPagamento { margin-top: 6px; }
+
+/* Botão centralizado */
+.form-actions {
+  display: flex;
+  justify-content: center;
+  margin-top: 20px;
 }
 
 button {
-  margin-top: 20px;
-  padding: 12px;
+  padding: 12px 30px;
   background-color: royalblue;
   color: white;
   border: none;
   border-radius: 6px;
   cursor: pointer;
-  width: 100%;
   font-size: 16px;
   font-weight: bold;
   transition: background 0.3s ease;
@@ -64,8 +113,10 @@ button {
 button:hover {
   background-color: dodgerblue;
 }
-#tabela-precos ul li.selecionado {
-  background-color: #d9f4ff;
-  font-weight: bold;
-  border-left: 4px solid #3399ff;
+
+/* Responsivo */
+@media (max-width: 600px) {
+  .row {
+    flex-direction: column;
+  }
 }

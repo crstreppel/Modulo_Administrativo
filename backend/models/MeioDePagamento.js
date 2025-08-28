@@ -2,7 +2,7 @@ const { DataTypes } = require('sequelize');
 const { sequelize } = require('../config/db');
 const Status = require('./Status');
 
-const Meio_de_pagamento = sequelize.define('Meio_de_pagamento', {
+const MeioDePagamento = sequelize.define('MeioDePagamento', {
   id: {
     type: DataTypes.INTEGER,
     primaryKey: true,
@@ -26,4 +26,4 @@ const Meio_de_pagamento = sequelize.define('Meio_de_pagamento', {
   paranoid: true,
 });
 
-module.exports = Meio_de_pagamento;
+module.exports = MeioDePagamento;

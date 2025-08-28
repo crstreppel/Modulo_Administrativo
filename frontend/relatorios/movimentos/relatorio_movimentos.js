@@ -1,6 +1,7 @@
 // relatorio_movimentos.js
 // Bruxão mode ON: relatório com períodos rápidos, loading, totais separados,
 // flag pra mostrar/ocultar baixas de adiantamento e exportação CSV.
+// Agora mirando em DATA DO MOVIMENTO (data_movimento) no render e no CSV.
 
 document.addEventListener("DOMContentLoaded", () => {
   const BASE_API = "http://localhost:3000/api";
@@ -25,10 +26,18 @@ document.addEventListener("DOMContentLoaded", () => {
   // Guarda o último resultado (pra re-render e CSV)
   let lastRows = [];
 
-  // Utils
-  const hojeISO = () => new Date().toISOString().split("T")[0];
+  // Utils (datas em LOCAL TIME pra não "voltar 1 dia")
+  const toLocalISO = (dateObj) => {
+    const y = dateObj.getFullYear();
+    const m = String(dateObj.getMonth() + 1).padStart(2, "0");
+    const d = String(dateObj.getDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
+  };
+  const hojeISO = () => toLocalISO(new Date());
+
   const formatBRL = (val) =>
     (Number(val) || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+
   const setPeriodo = (di, df) => {
     inputInicio.value = di;
     inputFim.value = df;
@@ -58,14 +67,14 @@ document.addEventListener("DOMContentLoaded", () => {
     const fim = new Date();
     const inicio = new Date();
     inicio.setDate(inicio.getDate() - 6); // incluindo hoje
-    setPeriodo(inicio.toISOString().split("T")[0], fim.toISOString().split("T")[0]);
+    setPeriodo(toLocalISO(inicio), toLocalISO(fim));
   });
 
   btnMes.addEventListener("click", () => {
     const now = new Date();
     const di = new Date(now.getFullYear(), now.getMonth(), 1);
     const df = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-    setPeriodo(di.toISOString().split("T")[0], df.toISOString().split("T")[0]);
+    setPeriodo(toLocalISO(di), toLocalISO(df));
   });
 
   // Render tabela + totais (operacionais x baixas)
@@ -97,7 +106,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const tr = document.createElement("tr");
         tr.innerHTML = `
           <td>${m.id}</td>
-          <td>${m.data_lancamento}</td>
+          <td>${m.data_movimento}</td>
           <td>${m.cliente?.nome ?? ""}</td>
           <td>${m.pet?.nome ?? ""}</td>
           <td>${m.servico?.descricao ?? ""}</td>
@@ -128,7 +137,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const incluirBaixasNaLista = chkIncluirBaixas.checked;
 
     const headers = [
-      "ID","Data Lançamento","Cliente","Pet","Serviço","Valor","Condição","Meio","Status","Tipo"
+      "ID","Data Movimento","Cliente","Pet","Serviço","Valor","Condição","Meio","Status","Tipo"
     ];
     const lines = [headers.join(";")];
 
@@ -137,7 +146,7 @@ document.addEventListener("DOMContentLoaded", () => {
       if (!baixa || (baixa && incluirBaixasNaLista)) {
         const row = [
           m.id,
-          m.data_lancamento,
+          m.data_movimento,
           m.cliente?.nome ?? "",
           m.pet?.nome ?? "",
           m.servico?.descricao ?? "",
@@ -174,18 +183,26 @@ document.addEventListener("DOMContentLoaded", () => {
 
   btnCsv.addEventListener("click", exportCSV);
 
-  // Buscar no backend
+  // Buscar no backend (por DATA DE MOVIMENTO, com compat + filtro local)
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
 
-    const dataInicio = inputInicio.value;
-    const dataFim = inputFim.value;
+    const dataInicio = inputInicio.value; // YYYY-MM-DD
+    const dataFim = inputFim.value;       // YYYY-MM-DD
     const clienteId = inputCliente.value;
     const statusId = inputStatus.value;
 
     const params = new URLSearchParams();
+
+    // ✅ Preferência: data de movimento
+    if (dataInicio) params.append("dataMovimentoInicio", dataInicio);
+    if (dataFim) params.append("dataMovimentoFim", dataFim);
+    params.append("tipoData", "movimento"); // se o backend suportar, ótimo
+
+    // 🛡️ Compat: alguns endpoints ainda usam dataInicio/dataFim
     if (dataInicio) params.append("dataInicio", dataInicio);
     if (dataFim) params.append("dataFim", dataFim);
+
     if (clienteId) params.append("clienteId", clienteId);
     if (statusId) params.append("statusId", statusId);
 
@@ -204,10 +221,22 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       const json = await res.json();
-      // Espera que cada item tenha: id, data_lancamento, valor, adiantamentoId (opcional),
-      // e includes: cliente.nome, pet.nome, servico.descricao,
-      // condicaoPagamento.{id,descricao}, meioDePagamento.{id,descricao}, status.descricao
-      lastRows = json.data || [];
+      let rows = json.data || [];
+
+      // 🔒 Filtro local garantido por data_movimento (inclusive)
+      const di = dataInicio || null;
+      const df = dataFim || null;
+      if (di || df) {
+        rows = rows.filter((m) => {
+          const dm = String(m?.data_movimento || "");
+          if (!dm) return false;
+          if (di && dm < di) return false;
+          if (df && dm > df) return false;
+          return true;
+        });
+      }
+
+      lastRows = rows;
       renderTabela(lastRows);
     } catch (err) {
       console.error("Erro ao buscar relatório:", err);

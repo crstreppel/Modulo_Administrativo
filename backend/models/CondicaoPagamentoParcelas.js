@@ -21,6 +21,7 @@ const CondicaoPagamentoParcelas = sequelize.define('CondicaoPagamentoParcelas', 
   numero_parcela: {
     type: DataTypes.INTEGER,
     allowNull: false,
+    field: 'parcela_numero', // <-- mapeia corretamente para a coluna do banco
   },
   dias_para_pagamento: {
     type: DataTypes.INTEGER,

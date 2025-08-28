@@ -26,7 +26,9 @@ async function popularRacas() {
       { id: 6, descricao: 'Pastor Alemão', especieId: 1, statusId: statusAtivo.id },
       { id: 7, descricao: 'Collie', especieId: 1, statusId: statusAtivo.id },
       { id: 8, descricao: 'Border Collie', especieId: 1, statusId: statusAtivo.id },
-      { id: 9, descricao: 'Pinscher', especieId: 1, statusId: statusAtivo.id }
+      { id: 9, descricao: 'Pinscher', especieId: 1, statusId: statusAtivo.id },
+      { id: 10, descricao: 'Pointer Alemao', especieId: 1, statusId: statusAtivo.id },
+      { id: 11, descricao: 'Maltes', especieId: 1, statusId: statusAtivo.id },
     ];
 
     // 4. Inserção com bulkCreate
