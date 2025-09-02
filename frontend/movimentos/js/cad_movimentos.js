@@ -1,4 +1,4 @@
-// cad_movimentos.js (v2.8.1 - encapsulado + singleton-guard)
+// cad_movimentos.js (v2.8.2 - regra de data futura bloqueia envio)
 (() => {
   'use strict';
 
@@ -71,15 +71,22 @@
         });
       }
 
-      // Aviso suave para data passada
+      // Avisos para datas retroativas/futuras
       if (inLanc) {
         inLanc.addEventListener('change', () => {
           const v = inLanc.value;
+          const hoje = hojeISO();
           const msg = $id('msg-data-lancamento');
-          if (v && v < hojeISO()) {
-            if (msg) { msg.textContent = 'Atenção: a data de lançamento é anterior a hoje. Será pedida confirmação no envio.'; msg.classList.remove('hidden'); }
+          if (!msg) return;
+
+          if (v && v < hoje) {
+            msg.textContent = 'Atenção: a data de lançamento é anterior a hoje. Será pedida confirmação no envio.';
+            msg.classList.remove('hidden');
+          } else if (v && v > hoje) {
+            msg.textContent = 'Atenção: data futura não é aceita. O envio será bloqueado.';
+            msg.classList.remove('hidden');
           } else {
-            if (msg) msg.classList.add('hidden');
+            msg.classList.add('hidden');
           }
         });
       }
@@ -322,20 +329,35 @@
       return;
     }
 
-    const payload = { clienteId, petId, servicoId, tabelaDePrecosId, condicaoPagamentoId, valor, statusId };
-    if (condicaoPagamentoId === 1 || condicaoPagamentoId === 3) payload.meioPagamentoId = meioPagamentoId;
+    // --- Regras de data ---
+    const isRetroativa = !!data_lancamento && data_lancamento < hoje;
+    const isFutura     = !!data_lancamento && data_lancamento > hoje;
 
-    if (manterData && data_lancamento) {
-      if (data_lancamento < hoje) {
-        const ok = window.confirm('A data do lançamento é anterior a hoje. Tem certeza que deseja lançar com essa data?');
-        if (!ok) return;
-      }
-      payload.data_lancamento = data_lancamento;
+    if (isFutura) {
+      // NOVO: data futura bloqueia o envio por completo
+      alert('Data futura não é aceita. O movimento NÃO foi gravado.');
+      return;
+    }
+
+    if (isRetroativa) {
+      // Retroativa sempre pergunta confirmação (com ou sem caixinha marcada)
+      const ok = window.confirm('A data do lançamento é anterior a hoje. Deseja lançar com a data informada?');
+      if (!ok) return;
+      // Envia a data retroativa
+      payloadSetData(data_lancamento);
     } else {
-      if (data_lancamento && data_lancamento !== hoje) {
-        alert('Observação: a data informada NÃO será enviada; o servidor gravará a data de HOJE.');
+      // Data igual a hoje: pode enviar sem payload.data_lancamento (server grava hoje)
+      if (manterData && data_lancamento) {
+        // Se quiser persistir explicitamente, também é ok
+        payloadSetData(data_lancamento);
       }
     }
+
+    // Monta payload base
+    const payload = buildPayloadBase({
+      clienteId, petId, servicoId, tabelaDePrecosId,
+      condicaoPagamentoId, valor, statusId, meioPagamentoId
+    });
 
     try {
       const { data } = await axios.post(`${API_BASE_URL}/movimentos`, payload);
@@ -359,10 +381,34 @@
       const cb = $id('manter-data-lancamento');
       if (cb) cb.checked = false;
 
+      // limpa aviso de data
+      const msg = $id('msg-data-lancamento');
+      if (msg) msg.classList.add('hidden');
+
     } catch (err) {
       console.error('Erro ao salvar movimento:', err);
       const msg = err?.response?.data?.erro || err?.message || 'Erro ao salvar movimento.';
       alert(msg);
     }
+
+    // Helpers locais do onSubmit
+    function payloadSetData(dateISO) {
+      // injeta/atualiza a data dentro do payload que será enviado
+      // (vamos construir o payload no final; aqui armazenamos de forma temporária)
+      _pendingData = dateISO;
+    }
   }
+
+  // variável para carregar data_lancamento confirmada (se houver)
+  let _pendingData = null;
+
+  function buildPayloadBase({ clienteId, petId, servicoId, tabelaDePrecosId, condicaoPagamentoId, valor, statusId, meioPagamentoId }) {
+    const payload = { clienteId, petId, servicoId, tabelaDePrecosId, condicaoPagamentoId, valor, statusId };
+    if (condicaoPagamentoId === 1 || condicaoPagamentoId === 3) payload.meioPagamentoId = meioPagamentoId;
+    if (_pendingData) payload.data_lancamento = _pendingData;
+    // limpa após uso
+    _pendingData = null;
+    return payload;
+  }
+
 })();
