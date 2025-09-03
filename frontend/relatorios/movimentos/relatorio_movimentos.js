@@ -43,14 +43,24 @@ document.addEventListener("DOMContentLoaded", () => {
     inputFim.value = df;
   };
 
-  // ⚠️ Regra correta:
-  // - Baixa de adiantamento: meioPagamentoId === 3 OU adiantamentoId preenchido
-  // - Entrada de adiantamento: condicao=adiantamento, meio != 3, adiantamentoId nulo -> entra no total operacional
+  // ⚠️ Regra correta (robusta):
+  // - **Baixa de adiantamento** se:
+  //     a) meioDePagamento.id === 3  (uso do adiantamento como meio de pagamento), OU
+  //     b) adiantamentoId preenchido **e** condicaoPagamento.id !== 3 (vinculado a um adiantamento existente)
+  // - **Entrada de adiantamento (operacional)** se:
+  //     condicaoPagamento.id === 3 **e** meioDePagamento.id !== 3
   const isBaixaAdiantamento = (m) => {
+    const condId = Number(m?.condicaoPagamento?.id);
     const meioId = Number(m?.meioDePagamento?.id);
-    const adtId = m?.adiantamentoId; // precisa vir do backend em attributes
+    const adtId = m?.adiantamentoId;
+
+    // Uso explícito do adiantamento como MEIO de pagamento => baixa
     if (Number.isFinite(meioId) && meioId === 3) return true;
-    if (adtId !== null && adtId !== undefined) return true;
+
+    // Qualquer vínculo a um adiantamento EXISTENTE conta como baixa,
+    // exceto quando o próprio movimento é a ENTRADA do adiantamento (condicao = 3)
+    if (adtId !== null && adtId !== undefined && condId !== 3) return true;
+
     return false;
   };
 
