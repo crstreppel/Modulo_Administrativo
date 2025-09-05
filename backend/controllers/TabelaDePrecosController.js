@@ -7,15 +7,37 @@ const Pets = require('../models/Pets');
 const Status = require('../models/Status');
 const { Op } = require('sequelize');
 
-// GET: Listar todos os registros ou filtrar por petId, racaId, servicoId
+/**
+ * Helper: valida se a raca informada pertence à especie informada.
+ * - Se não houver especieId OU não houver racaId, não valida (fica neutro).
+ * - Se houver ambos, checa no banco.
+ */
+async function validarEspecieDaRaca(especieId, racaId) {
+  if (!especieId || !racaId) return true;
+  const raca = await Racas.findByPk(racaId, { attributes: ['id', 'especieId'] });
+  if (!raca) return false;
+  return Number(raca.especieId) === Number(especieId);
+}
+
+// GET: Listar todos os registros ou filtrar por petId, racaId, servicoId (+ especieId para raca)
 const listarTabelaDePrecos = async (req, res) => {
   try {
-    const { petId, racaId, servicoId } = req.query;
+    const { petId, racaId, servicoId, especieId } = req.query;
     const where = { deletedAt: null };
 
     if (petId) where.petId = petId;
     if (racaId) where.racaId = racaId;
     if (servicoId) where.servicoId = servicoId;
+
+    // Regra de filtro por espécie:
+    // - Se especieId vier, mantemos genéricos (racaId null) e registros cuja RAÇA pertence à espécie.
+    // - Não mexe em petId (evita depender de include encadeado e não quebrar relações existentes).
+    if (especieId) {
+      where[Op.or] = [
+        { racaId: null },
+        { '$raca.especieId$': Number(especieId) }
+      ];
+    }
 
     const tabelaDePrecos = await TabelaDePrecos.findAll({
       where,
@@ -23,7 +45,13 @@ const listarTabelaDePrecos = async (req, res) => {
         { model: Servicos, as: 'servico' },
         { model: CondicaoDePagamento, as: 'condicaoDePagamento' },
         // REMOVIDO: { model: Meio_de_pagamento, as: 'meioDePagamento' },
-        { model: Racas, as: 'raca' },
+        {
+          model: Racas,
+          as: 'raca',
+          // Mantém LEFT JOIN; o filtro principal acima usa $raca.especieId$ no where.
+          required: false,
+          attributes: ['id', 'descricao', 'especieId']
+        },
         { model: Pets, as: 'pet' },
         { model: Status, as: 'status' }
       ],
@@ -37,7 +65,7 @@ const listarTabelaDePrecos = async (req, res) => {
   }
 };
 
-// GET: Buscar tabela por petId e servicoId com fallback para racaId e genérico (sem vínculos)
+// GET: Buscar tabela por petId e servicoId com fallback para racaId e genérico (sem mudança)
 const buscarTabelaPorPetOuRaca = async (req, res) => {
   const petId = req.query.petId;
   const servicoId = req.query.servicoId;
@@ -144,13 +172,19 @@ const verificarEntrada = async (req, res) => {
   }
 };
 
-// POST: Criar um novo registro (sem meioPagamento)
+// POST: Criar um novo registro (sem meioPagamento) + validação de especie/raca
 const criarTabelaDePrecos = async (req, res) => {
-  const { servicoId, condicaoDePagamentoId, racaId, petId, valorServico, statusId } = req.body;
+  const { servicoId, condicaoDePagamentoId, racaId, petId, valorServico, statusId, especieId } = req.body;
 
   try {
     if ((petId && racaId) || (!petId && !racaId)) {
       return res.status(400).json({ erro: 'Informe apenas petId ou racaId, mas não ambos.' });
+    }
+
+    // Se veio especieId e racaId, valida coerência
+    const ok = await validarEspecieDaRaca(especieId, racaId);
+    if (!ok) {
+      return res.status(400).json({ erro: 'A raça informada não pertence à espécie selecionada.' });
     }
 
     const novoRegistro = await TabelaDePrecos.create({
@@ -180,10 +214,10 @@ const criarTabelaDePrecos = async (req, res) => {
   }
 };
 
-// PUT: Atualizar um registro existente (sem meioPagamento)
+// PUT: Atualizar um registro existente (sem meioPagamento) + validação de especie/raca
 const atualizarTabelaDePrecos = async (req, res) => {
   const { id } = req.params;
-  const { servicoId, condicaoDePagamentoId, racaId, petId, valorServico, statusId } = req.body;
+  const { servicoId, condicaoDePagamentoId, racaId, petId, valorServico, statusId, especieId } = req.body;
 
   try {
     const tabelaDePreco = await TabelaDePrecos.findByPk(id);
@@ -191,6 +225,12 @@ const atualizarTabelaDePrecos = async (req, res) => {
 
     if ((petId && racaId) || (!petId && !racaId)) {
       return res.status(400).json({ erro: 'Informe apenas petId ou racaId, mas não ambos.' });
+    }
+
+    // Se veio especieId e racaId, valida coerência
+    const ok = await validarEspecieDaRaca(especieId, racaId);
+    if (!ok) {
+      return res.status(400).json({ erro: 'A raça informada não pertence à espécie selecionada.' });
     }
 
     await tabelaDePreco.update({
