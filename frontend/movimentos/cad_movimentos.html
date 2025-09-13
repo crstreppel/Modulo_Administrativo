@@ -8,23 +8,27 @@
   <style>
     /* micro pro modal (independente de global.css) */
     .hidden{display:none}
-    #modal-confirmacao{
+    #modal-confirmacao,
+    #modal-liquidacao{
       position:fixed; inset:0; display:none; align-items:center; justify-content:center;
       background:rgba(0,0,0,.45); z-index:9999;
     }
-    #modal-confirmacao .modal-card{
+    #modal-confirmacao .modal-card,
+    #modal-liquidacao .modal-card{
       background:#fff; padding:16px; border-radius:12px; width:min(420px,94%);
       border:1px solid #e5e7eb; box-shadow:0 10px 30px rgba(0,0,0,.15)
     }
-    #modal-confirmacao .actions{display:flex; gap:8px; justify-content:flex-end; margin-top:12px}
-    #modal-confirmacao button{padding:10px 14px; border-radius:8px; border:1px solid #d1d5db; cursor:pointer}
+    #modal-confirmacao .actions,
+    #modal-liquidacao .actions{display:flex; gap:8px; justify-content:flex-end; margin-top:12px}
+    #modal-confirmacao button,
+    #modal-liquidacao button{padding:10px 14px; border-radius:8px; border:1px solid #d1d5db; cursor:pointer}
   </style>
 </head>
 <body>
   <div class="container">
     <h1>Cadastro de Movimento</h1>
 
-    <!-- IMPORTANTE: id do form para o JS v2.8 -->
+    <!-- IMPORTANTE: id do form para o JS v2.9 -->
     <form id="formCadastroMovimento" autocomplete="off">
       <div class="row">
         <div class="form-group">
@@ -121,9 +125,22 @@
     </div>
   </div>
 
+  <!-- Modal de liquidação (substitui o confirm() no JS) -->
+  <div id="modal-liquidacao">
+    <div class="modal-card">
+      <h3>Liquidar título agora?</h3>
+      <p>Este movimento é À VISTA. Deseja liquidar o título agora?</p>
+      <small id="detalhe-liquidacao" class="hidden"></small>
+      <div class="actions">
+        <button id="btn-liquidar">Liquidar</button>
+        <button id="btn-nao-liquidar">Não liquidar</button>
+      </div>
+    </div>
+  </div>
+
   <!-- libs e scripts: carrega utils antes (se houver helpers), depois o módulo -->
   <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
   <script src="../js/utils.js"></script>
-  <script src="./js/cad_movimentos.js?v=2.8"></script>
+  <script src="./js/cad_movimentos.js?v=2.9"></script>
 </body>
 </html>

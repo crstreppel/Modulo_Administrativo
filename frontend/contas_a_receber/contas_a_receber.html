@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Contas a Receber</title>
+
+  <!-- (Opcional) seu CSS global -->
+  <link rel="stylesheet" href="./css/contas_a_receber.css"/>
+
+  <style>
+    /* ====== estilos mínimos e isolados para modais/ux ====== */
+    .hidden{ display:none; }
+    .page{ max-width:1100px; margin:24px auto; padding:0 12px; }
+    h1{ margin:8px 0 16px; }
+    .filters{
+      display:grid; grid-template-columns: repeat(6, 1fr); gap:10px;
+      align-items:end; margin-bottom:12px;
+    }
+    .filters .full{ grid-column: 1 / -1; }
+    .filters label{ display:block; font-size:.9rem; margin-bottom:4px; }
+    .filters input, .filters select, .filters button{
+      width:100%; padding:8px; border:1px solid #d1d5db; border-radius:8px;
+    }
+    .filters .actions{ display:flex; gap:8px; }
+    .table-wrap{ overflow:auto; border:1px solid #e5e7eb; border-radius:12px; }
+    table{ width:100%; border-collapse:collapse; font-size:.95rem; }
+    thead th{
+      position:sticky; top:0; background:#f8fafc; text-align:left; padding:10px; border-bottom:1px solid #e5e7eb;
+    }
+    tbody td{ padding:10px; border-bottom:1px solid #f1f5f9; vertical-align:middle; }
+    .badge{ display:inline-block; padding:2px 8px; border-radius:999px; border:1px solid #e5e7eb; font-size:.8rem; }
+    .badge.aberto{ background:#fff7ed; border-color:#fdba74; }
+    .badge.liquidado{ background:#ecfdf5; border-color:#86efac; }
+    .badge.cancelado{ background:#fef2f2; border-color:#fecaca; }
+    .acoes{ display:flex; gap:6px; flex-wrap:wrap; }
+    .btn{ padding:8px 10px; border-radius:8px; border:1px solid #d1d5db; background:#fff; cursor:pointer; }
+    .btn.primary{ background:#111827; color:#fff; border-color:#111827; }
+    .btn.warn{ background:#fef3c7; border-color:#f59e0b; }
+    .btn.danger{ background:#fee2e2; border-color:#ef4444; }
+
+    /* ====== modais ====== */
+    .modal{
+      position:fixed; inset:0; display:none; align-items:center; justify-content:center;
+      background:rgba(0,0,0,.45); z-index:9999;
+    }
+    .modal .card{
+      background:#fff; width:min(560px, 94%); border:1px solid #e5e7eb; border-radius:16px;
+      box-shadow:0 10px 30px rgba(0,0,0,.15); padding:16px;
+    }
+    .modal h3{ margin:0 0 10px; }
+    .modal .desc{ color:#475569; margin-bottom:10px; }
+    .form-grid{ display:grid; grid-template-columns: 1fr 1fr; gap:10px; }
+    .form-grid .full{ grid-column: 1 / -1; }
+    .modal label{ display:block; font-size:.9rem; margin-bottom:4px; }
+    .modal input, .modal select, .modal textarea{
+      width:100%; padding:10px; border:1px solid #d1d5db; border-radius:10px;
+    }
+    .modal .actions{ display:flex; gap:8px; justify-content:flex-end; margin-top:12px; }
+
+    /* ====== abas do modal liquidar ====== */
+    .tabs{
+      display:flex; gap:6px; margin-bottom:10px;
+    }
+    .tab{
+      flex:1; text-align:center; padding:8px 10px; border-radius:999px;
+      border:1px solid #d1d5db; background:#fff; cursor:pointer; user-select:none;
+      font-weight:600;
+    }
+    .tab.active{
+      background:#111827; border-color:#111827; color:#fff;
+    }
+    .tab:hover{ filter:brightness(0.97); }
+
+    .tab-panel{ display:block; }
+    .tab-panel.hidden{ display:none; }
+
+    /* feedback discreto dentro do modal */
+    #liq-feedback{ font-size:.9rem; margin-top:2px; }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <h1>Contas a Receber</h1>
+
+    <!-- ====== Filtros ====== -->
+    <section class="filters" id="filtros">
+      <div>
+        <label for="filtro-movimento">Movimento ID</label>
+        <input type="number" id="filtro-movimento" placeholder="ex: 123"/>
+      </div>
+      <div>
+        <label for="filtro-status">Status</label>
+        <select id="filtro-status">
+          <option value="">Todos</option>
+          <option value="ABERTO">ABERTO</option>
+          <option value="ABERTO PARCIAL">ABERTO PARCIAL</option>
+          <option value="LIQUIDADO">LIQUIDADO</option>
+          <option value="CANCELADO">CANCELADO</option>
+        </select>
+      </div>
+      <div>
+        <label for="filtro-cliente">Cliente (nome)</label>
+        <input type="text" id="filtro-cliente" placeholder="Busca por nome"/>
+      </div>
+      <div>
+        <label for="filtro-inicio">Venc. Início</label>
+        <input type="date" id="filtro-inicio"/>
+      </div>
+      <div>
+        <label for="filtro-fim">Venc. Fim</label>
+        <input type="date" id="filtro-fim"/>
+      </div>
+      <div class="actions">
+        <button id="btn-buscar" class="btn primary">Buscar</button>
+        <button id="btn-limpar" class="btn">Limpar</button>
+      </div>
+      <div class="full">
+        <small id="msg-filtros" class="hidden"></small>
+      </div>
+    </section>
+
+    <!-- ====== Tabela ====== -->
+    <div class="table-wrap">
+      <table id="tabela-contas">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Cliente</th>
+            <th>Mov.</th>
+            <th>Vencimento</th>
+            <th>Valor</th>
+            <th>Pago</th>
+            <th>Status</th>
+            <th style="min-width:260px;">Ações</th>
+          </tr>
+        </thead>
+        <tbody id="tbody-contas">
+          <!-- linhas geradas pelo JS -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ====== MODAL: LIQUIDAR (abas Parcial | Total) ====== -->
+  <div id="modal-liquidar" class="modal" role="dialog" aria-modal="true" aria-labelledby="liq-title">
+    <div class="card">
+      <h3 id="liq-title">Liquidar título</h3>
+      <p class="desc" id="liq-info">—</p>
+
+      <!-- Abas -->
+      <div class="tabs" id="liq-tabs">
+        <button class="tab active" data-tab="parcial" id="tab-parcial">Parcial</button>
+        <button class="tab" data-tab="total" id="tab-total">Total</button>
+      </div>
+
+      <!-- Campos comuns às duas abas -->
+      <div class="form-grid">
+        <div>
+          <label for="liq-data">Data do pagamento</label>
+          <input type="date" id="liq-data"/>
+        </div>
+        <div>
+          <label for="liq-meio">Meio de pagamento</label>
+          <select id="liq-meio">
+            <option value="">Selecione</option>
+            <!-- preenchido via JS /api/meios-de-pagamento -->
+          </select>
+        </div>
+        <div>
+          <label for="liq-saldo-atual">Saldo atual do título</label>
+          <input type="text" id="liq-saldo-atual" readonly />
+        </div>
+        <div>
+          <label for="liq-desconto">Desconto (opcional)</label>
+          <input type="number" id="liq-desconto" step="0.01" min="0" placeholder="0,00" />
+        </div>
+        <div>
+          <label for="liq-acrescimo">Juros/Multa (opcional)</label>
+          <input type="number" id="liq-acrescimo" step="0.01" min="0" placeholder="0,00" />
+        </div>
+        <div class="full">
+          <label for="liq-obs">Observação (opcional)</label>
+          <textarea id="liq-obs" rows="2" placeholder="Ex.: Recebimento no balcão"></textarea>
+        </div>
+      </div>
+
+      <!-- Painel: PARCIAL -->
+      <div class="tab-panel" data-panel="parcial" id="panel-parcial">
+        <div class="form-grid">
+          <div>
+            <label for="liq-valor-pago">Valor pago agora</label>
+            <input type="number" id="liq-valor-pago" step="0.01" min="0" placeholder="0,00" />
+          </div>
+          <div class="full">
+            <small id="liq-feedback">Informe o valor pago. Se for menor que o saldo, será uma liquidação parcial.</small>
+          </div>
+        </div>
+      </div>
+
+      <!-- Painel: TOTAL -->
+      <div class="tab-panel hidden" data-panel="total" id="panel-total">
+        <div class="form-grid">
+          <div class="full">
+            <small>
+              Esta aba faz a <b>baixa TOTAL</b> do título. O efetivo precisa quitar o saldo.
+              Você pode usar <b>desconto</b> e/ou <b>juros/multa</b> se necessário.
+            </small>
+          </div>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button id="btn-confirmar-liquidar" class="btn primary">Confirmar</button>
+        <button id="btn-cancelar-liquidar" class="btn">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====== MODAL: PRORROGAR ====== -->
+  <div id="modal-prorrogar" class="modal" role="dialog" aria-modal="true" aria-labelledby="pro-title">
+    <div class="card">
+      <h3 id="pro-title">Prorrogar vencimento</h3>
+      <p class="desc" id="pro-info">—</p>
+
+      <div class="form-grid">
+        <div>
+          <label for="pro-nova-data">Novo vencimento</label>
+          <input type="date" id="pro-nova-data"/>
+        </div>
+        <div class="full">
+          <label for="pro-obs">Observação (opcional)</label>
+          <textarea id="pro-obs" rows="3" placeholder="Ex.: Cliente pediu prorrogação por 7 dias"></textarea>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button id="btn-confirmar-prorrogar" class="btn warn">Prorrogar</button>
+        <button id="btn-cancelar-prorrogar" class="btn">Não prorrogar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====== MODAL: CANCELAR ====== -->
+  <div id="modal-cancelar" class="modal" role="dialog" aria-modal="true" aria-labelledby="can-title">
+    <div class="card">
+      <h3 id="can-title">Cancelar título</h3>
+      <p class="desc" id="can-info">—</p>
+
+      <div class="form-grid">
+        <div class="full">
+          <label for="can-obs">Motivo/Observação</label>
+          <textarea id="can-obs" rows="4" placeholder="Ex.: Cancelado por erro de lançamento"></textarea>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button id="btn-confirmar-cancelar" class="btn danger">Cancelar título</button>
+        <button id="btn-cancelar-cancelar" class="btn">Não cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- libs e scripts -->
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  <script src="../js/utils.js"></script>
+  <!-- JS que vai popular tabela, filtros e controlar os modais -->
+  <script src="./js/contas_a_receber.js?v=1.0"></script>
+</body>
+</html>

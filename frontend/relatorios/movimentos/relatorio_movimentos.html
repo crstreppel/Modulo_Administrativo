@@ -4,28 +4,29 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Relatório de Movimentos</title>
+
+  <!-- Anti-cache dev -->
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
+
   <link rel="stylesheet" href="global.css" />
   <link rel="stylesheet" href="relatorio_movimentos.css" />
   <style>
-    /* adição mínima pra UX sem depender do global */
     .row { display: flex; flex-wrap: wrap; gap: 10px; align-items: end; }
     .actions { display: flex; gap: 8px; flex-wrap: wrap; }
-    .btn-secondary {
-      background: #eaeaea; border: 1px solid #ccc; color: #333; cursor: pointer; border-radius: 6px; padding: 6px 10px;
-    }
-    .loading {
-      display: none; margin-left: 10px; font-size: 14px; color: #666;
-    }
-    .loading.show { display: inline-block; }
-    .total {
-      margin-top: 10px; font-weight: bold; color: #333;
-    }
-    .right { text-align: right; }
+    .btn-secondary { background:#eaeaea; border:1px solid #ccc; color:#333; cursor:pointer; border-radius:6px; padding:6px 10px; }
+    .loading { display:none; margin-left:10px; font-size:14px; color:#666; }
+    .loading.show { display:inline-block; }
+    .total { margin-top:10px; font-weight:bold; color:#333; }
+    .right { text-align:right; }
+    .debug { margin-top:8px; font-size:12px; color:#666; }
   </style>
 </head>
 <body>
 <h1>Relatório de Movimentos</h1>
 
+  <!-- FILTRA APENAS POR data_movimento -->
   <form id="filtro-relatorio">
     <div class="row">
       <label>Data Movimento Início
@@ -59,6 +60,7 @@
 
   <div class="total" id="resumoTotal"></div>
   <div class="total" id="resumoBaixas"></div>
+  <div class="debug" id="debugInfo"></div>
 
   <table border="1" id="tabela-relatorio">
     <thead>
@@ -78,6 +80,6 @@
     <tbody></tbody>
   </table>
 
-  <script src="relatorio_movimentos.js"></script>
+  <script src="relatorio_movimentos_failover.js?v=3.0.2" defer></script>
 </body>
 </html>

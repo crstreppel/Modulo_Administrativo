@@ -1,6 +1,7 @@
 -- ============================================
 -- CHECKS + ÍNDICES (SEGURANÇA / INTEGRIDADE)
 -- Projeto: Petshop
+-- Padrão Bruxão — revisado
 -- ============================================
 
 BEGIN;
@@ -74,16 +75,16 @@ ALTER TABLE movimentos
   ADD CONSTRAINT chk_mov_valor_pos
   CHECK ("valor" > 0) NOT VALID;
 
--- Datas básicas (não trava inserts legado porque é NOT VALID)
+-- Datas básicas (corrigido: usa colunas existentes)
 ALTER TABLE movimentos
   DROP CONSTRAINT IF EXISTS chk_mov_datas_basicas;
 
 ALTER TABLE movimentos
   ADD CONSTRAINT chk_mov_datas_basicas
   CHECK (
-    ("data_vencimento" IS NULL OR "data_lancamento" IS NULL OR "data_vencimento" >= "data_lancamento")
+    ("data_movimento"  IS NULL OR "data_lancamento" IS NULL OR "data_movimento"  >= "data_lancamento")
     AND
-    ("data_liquidacao" IS NULL OR "data_movimento" IS NULL OR "data_liquidacao" >= "data_movimento")
+    ("data_liquidacao" IS NULL OR "data_movimento"  IS NULL OR "data_liquidacao" >= "data_movimento")
   ) NOT VALID;
 
 -- Índices de apoio às consultas
@@ -95,16 +96,61 @@ CREATE INDEX IF NOT EXISTS idx_movimentos_pet_servico
   ON movimentos ("petId","servicoId")
   WHERE "deletedAt" IS NULL;
 
+-- ---------------------------
+-- TABELA: contas_a_receber
+-- ---------------------------
+
+-- CHECKs básicos
+ALTER TABLE contas_a_receber
+  DROP CONSTRAINT IF EXISTS chk_car_valor_pos;
+
+ALTER TABLE contas_a_receber
+  ADD CONSTRAINT chk_car_valor_pos
+  CHECK ("valorOriginal" > 0) NOT VALID;
+
+ALTER TABLE contas_a_receber
+  DROP CONSTRAINT IF EXISTS chk_car_valor_pago_nao_neg;
+
+ALTER TABLE contas_a_receber
+  ADD CONSTRAINT chk_car_valor_pago_nao_neg
+  CHECK ("valorPago" >= 0) NOT VALID;
+
+-- FK para meio de pagamento da liquidação (campo já criado no modelo)
+ALTER TABLE contas_a_receber
+  DROP CONSTRAINT IF EXISTS fk_car_meio_pagto;
+
+ALTER TABLE contas_a_receber
+  ADD CONSTRAINT fk_car_meio_pagto
+  FOREIGN KEY ("meioPagamentoId")
+  REFERENCES meio_de_pagamento(id)
+  ON UPDATE CASCADE
+  ON DELETE SET NULL
+  NOT VALID;
+
+-- Índices de apoio (consultas comuns do sistema)
+-- 1) Encontrar título pelo movimento (liquidação imediata, etc.)
+CREATE INDEX IF NOT EXISTS idx_car_movimento_ativos
+  ON contas_a_receber ("movimentoId")
+  WHERE "deletedAt" IS NULL;
+
+-- 2) Consultas por cliente + status (títulos em aberto do cliente)
+CREATE INDEX IF NOT EXISTS idx_car_cliente_status_ativos
+  ON contas_a_receber ("clienteId","statusId")
+  WHERE "deletedAt" IS NULL;
+
 COMMIT;
 
 -- ============================================
--- OPCIONAL: Validar os CHECKs quando a base estiver redonda
+-- OPCIONAL: Validar os CHECKs/FKs quando a base estiver redonda
 -- (descomente quando quiser forçar validação dos registros existentes)
 -- ALTER TABLE tabela_de_precos VALIDATE CONSTRAINT chk_pet_xor_raca;
 -- ALTER TABLE tabela_de_precos VALIDATE CONSTRAINT chk_preco_valor_pos;
 -- ALTER TABLE movimentos VALIDATE CONSTRAINT chk_meio_pagto_condicao;
 -- ALTER TABLE movimentos VALIDATE CONSTRAINT chk_mov_valor_pos;
 -- ALTER TABLE movimentos VALIDATE CONSTRAINT chk_mov_datas_basicas;
+-- ALTER TABLE contas_a_receber VALIDATE CONSTRAINT chk_car_valor_pos;
+-- ALTER TABLE contas_a_receber VALIDATE CONSTRAINT chk_car_valor_pago_nao_neg;
+-- ALTER TABLE contas_a_receber VALIDATE CONSTRAINT fk_car_meio_pagto;
 -- ============================================
 
 -- ============================================
@@ -114,13 +160,13 @@ COMMIT;
 --    FROM tabela_de_precos
 --    WHERE "petId" IS NOT NULL AND "deletedAt" IS NULL
 --    GROUP BY 1,2,3 HAVING COUNT(*) > 1;
-
+--
 -- 2) Ver duplicatas na tabela de preços (RAÇA):
 --    SELECT "servicoId","condicaoDePagamentoId","racaId", COUNT(*)
 --    FROM tabela_de_precos
 --    WHERE "racaId" IS NOT NULL AND "deletedAt" IS NULL
 --    GROUP BY 1,2,3 HAVING COUNT(*) > 1;
-
+--
 -- 3) Ver quebras de regra do meio de pagamento:
 --    -- À vista sem meio:
 --    SELECT id,"condicaoPagamentoId","meioPagamentoId"

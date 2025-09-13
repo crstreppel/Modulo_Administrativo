@@ -1,4 +1,4 @@
-// cad_movimentos.js (v2.8.2 - regra de data futura bloqueia envio)
+// cad_movimentos.js (v2.10.0 - modal de liquidação custom; regra retroativa intacta)
 (() => {
   'use strict';
 
@@ -11,6 +11,10 @@
 
   // Base da API local ao módulo (pode sobrescrever via window.API_BASE_URL)
   const API_BASE_URL = window.API_BASE_URL || 'http://localhost:3000/api';
+
+  // Constantes de condição (mantendo adiantamento intocado)
+  const CONDICAO_AVISTA = 1;
+  const CONDICAO_ADIANTAMENTO = 3;
 
   // Helpers DOM seguros
   const $id = (x) => document.getElementById(x);
@@ -91,7 +95,7 @@
         });
       }
 
-      wireModal();
+      wireModalCriarTabela();
     } catch (err) {
       console.error('Falha na inicialização do módulo Movimentos:', err);
       alert('Erro ao carregar página de Movimentos.');
@@ -246,7 +250,7 @@
     const statusSel = $id('status');
 
     if (wrapper && meioSel) {
-      if (cond === 1 || cond === 3) {
+      if (cond === CONDICAO_AVISTA || cond === CONDICAO_ADIANTAMENTO) {
         show('wrapper-meioPagamento');
         meioSel.removeAttribute('disabled');
         meioSel.setAttribute('required', 'required');
@@ -258,23 +262,23 @@
       }
     }
 
-    if (statusSel && (cond === 1 || cond === 3)) {
+    if (statusSel && (cond === CONDICAO_AVISTA || cond === CONDICAO_ADIANTAMENTO)) {
       statusSel.value = '5';
     }
   }
 
   /* ===================== Modal Criar Tabela ===================== */
 
-  function wireModal() {
+  function wireModalCriarTabela() {
     const modal = $id('modal-confirmacao');
     if (!modal) return;
     const btnPet = $id('criarParaPet');
     const btnRaca = $id('criarParaRaca');
     const btnCancel = $id('cancelarCriacao');
 
-    if (btnPet) btnPet.addEventListener('click', () => { closeModal(); alert('Abra o módulo Tabela de Preços para criar para o PET.'); });
-    if (btnRaca) btnRaca.addEventListener('click', () => { closeModal(); alert('Abra o módulo Tabela de Preços para criar para a RAÇA.'); });
-    if (btnCancel) btnCancel.addEventListener('click', closeModal);
+    if (btnPet) btnPet.addEventListener('click', () => { closeModalCriarTabela(); alert('Abra o módulo Tabela de Preços para criar para o PET.'); });
+    if (btnRaca) btnRaca.addEventListener('click', () => { closeModalCriarTabela(); alert('Abra o módulo Tabela de Preços para criar para a RAÇA.'); });
+    if (btnCancel) btnCancel.addEventListener('click', closeModalCriarTabela);
   }
 
   function openModalCriarTabela(petId, servicoId) {
@@ -285,12 +289,65 @@
     modal.dataset.servicoId = servicoId;
   }
 
-  function closeModal() {
+  function closeModalCriarTabela() {
     const modal = $id('modal-confirmacao');
     if (!modal) return;
     modal.style.display = 'none';
     delete modal.dataset.petId;
     delete modal.dataset.servicoId;
+  }
+
+  /* ===================== Modal de Liquidação (custom "confirm") ===================== */
+
+  /**
+   * Abre o modal de liquidação e resolve com true (Liquidar) ou false (Não liquidar).
+   * Exibe detalhes opcionais (valor, meio).
+   */
+  function confirmarLiquidacaoModal({ valor, meioTexto } = {}) {
+    return new Promise((resolve) => {
+      const modal = $id('modal-liquidacao');
+      const btnOk = $id('btn-liquidar');
+      const btnNo = $id('btn-nao-liquidar');
+      const detalhe = $id('detalhe-liquidacao');
+
+      if (!modal || !btnOk || !btnNo) {
+        // fallback extremo: se o modal não existir por algum motivo, usa confirm nativo
+        const fallback = window.confirm('Este movimento é À VISTA. Deseja liquidar o título agora?');
+        return resolve(!!fallback);
+      }
+
+      // Monte o detalhe (opcional)
+      if (detalhe && (valor || meioTexto)) {
+        const partes = [];
+        if (valor) partes.push(`Valor: ${fmtMoney(valor)}`);
+        if (meioTexto) partes.push(`Meio: ${meioTexto}`);
+        detalhe.textContent = partes.join(' • ');
+        detalhe.classList.remove('hidden');
+      } else if (detalhe) {
+        detalhe.textContent = '';
+        detalhe.classList.add('hidden');
+      }
+
+      // Funções auxiliares p/ limpar handlers
+      const cleanup = () => {
+        btnOk.removeEventListener('click', onOk);
+        btnNo.removeEventListener('click', onNo);
+        modal.removeEventListener('click', onBackdrop);
+        modal.style.display = 'none';
+      };
+      const onOk = () => { cleanup(); resolve(true); };
+      const onNo = () => { cleanup(); resolve(false); };
+      const onBackdrop = (ev) => {
+        // clique fora do card => não liquidar (comportamento mais seguro)
+        if (ev.target === modal) onNo();
+      };
+
+      btnOk.addEventListener('click', onOk, { once: true });
+      btnNo.addEventListener('click', onNo, { once: true });
+      modal.addEventListener('click', onBackdrop, { once: true });
+
+      modal.style.display = 'flex';
+    });
   }
 
   /* ===================== Submit ===================== */
@@ -311,7 +368,7 @@
     const meioPagamentoId = Number(getVal('meioPagamento')) || null;
 
     let statusId = Number(getVal('status')) || null;
-    if (condicaoPagamentoId === 1 || condicaoPagamentoId === 3) {
+    if (condicaoPagamentoId === CONDICAO_AVISTA || condicaoPagamentoId === CONDICAO_ADIANTAMENTO) {
       statusId = 5;
       setVal('status', '5');
     }
@@ -324,7 +381,7 @@
       alert('Preencha todos os campos obrigatórios.');
       return;
     }
-    if ((condicaoPagamentoId === 1 || condicaoPagamentoId === 3) && !meioPagamentoId) {
+    if ((condicaoPagamentoId === CONDICAO_AVISTA || condicaoPagamentoId === CONDICAO_ADIANTAMENTO) && !meioPagamentoId) {
       alert('Para À VISTA ou ADIANTAMENTO, selecione o meio de pagamento.');
       return;
     }
@@ -360,9 +417,24 @@
     });
 
     try {
-      const { data } = await axios.post(`${API_BASE_URL}/movimentos`, payload);
+      const { data: mov } = await axios.post(`${API_BASE_URL}/movimentos`, payload);
       alert('Movimento salvo com sucesso!');
-      console.log('Movimento criado:', data);
+      console.log('Movimento criado:', mov);
+
+      // --- NOVO: se for à vista, oferecer liquidação imediata (via modal custom) ---
+      if (condicaoPagamentoId === CONDICAO_AVISTA && meioPagamentoId) {
+        const meioTexto = $id('meioPagamento')?.selectedOptions?.[0]?.text || '';
+        const deseja = await confirmarLiquidacaoModal({ valor, meioTexto });
+        if (deseja) {
+          try {
+            await liquidarTituloDoMovimento({ movimento: mov, meioPagamentoId });
+            alert('Título liquidado com sucesso.');
+          } catch (errLiquida) {
+            console.error('Falha na liquidação imediata:', errLiquida);
+            alert('Não foi possível liquidar agora. O título permaneceu em aberto.');
+          }
+        }
+      }
 
       // reset
       $id('formCadastroMovimento')?.reset();
@@ -393,8 +465,6 @@
 
     // Helpers locais do onSubmit
     function payloadSetData(dateISO) {
-      // injeta/atualiza a data dentro do payload que será enviado
-      // (vamos construir o payload no final; aqui armazenamos de forma temporária)
       _pendingData = dateISO;
     }
   }
@@ -404,11 +474,64 @@
 
   function buildPayloadBase({ clienteId, petId, servicoId, tabelaDePrecosId, condicaoPagamentoId, valor, statusId, meioPagamentoId }) {
     const payload = { clienteId, petId, servicoId, tabelaDePrecosId, condicaoPagamentoId, valor, statusId };
-    if (condicaoPagamentoId === 1 || condicaoPagamentoId === 3) payload.meioPagamentoId = meioPagamentoId;
+    if (condicaoPagamentoId === CONDICAO_AVISTA || condicaoPagamentoId === CONDICAO_ADIANTAMENTO) payload.meioPagamentoId = meioPagamentoId;
     if (_pendingData) payload.data_lancamento = _pendingData;
-    // limpa após uso
     _pendingData = null;
     return payload;
+  }
+
+  /* ===================== Liquidação imediata (à vista) ===================== */
+
+  /**
+   * Tenta encontrar o título gerado pelo movimento e chamar a rota de liquidação.
+   * 1) Tenta GET /contas-a-receber?movimentoId=...
+   * 2) Se a API não filtrar, faz GET /contas-a-receber e filtra no front.
+   */
+  async function liquidarTituloDoMovimento({ movimento, meioPagamentoId }) {
+    if (!movimento || !movimento.id) throw new Error('Movimento sem ID para liquidação.');
+
+    const titulo = await encontrarTituloDoMovimento(movimento.id);
+    if (!titulo || !titulo.id) throw new Error('Título do movimento não encontrado.');
+
+    const payloadLiquida = {
+      dataPagamento: hojeISO(),
+      meioPagamentoId,
+      obs: 'Liquidação imediata no lançamento à vista'
+      // valorPago: omitido para liquidação total (controller assume valorOriginal)
+    };
+
+    await axios.post(`${API_BASE_URL}/contas-a-receber/${titulo.id}/liquidar`, payloadLiquida);
+  }
+
+  async function encontrarTituloDoMovimento(movimentoId) {
+    try {
+      // 1) Tentativa com filtro de API
+      const { data: contasFiltradas } = await axios.get(`${API_BASE_URL}/contas-a-receber`, {
+        params: { movimentoId }
+      });
+      const c1 = Array.isArray(contasFiltradas) ? contasFiltradas : [];
+      const hit1 = c1.find(c => Number(c.movimentoId) === Number(movimentoId));
+      if (hit1) return hit1;
+    } catch (_) {
+      // se a API der 4xx/5xx, cai no fallback
+    }
+
+    // 2) Fallback: busca tudo e filtra no front (funciona com a tua rota atual)
+    const { data: todas } = await axios.get(`${API_BASE_URL}/contas-a-receber`);
+    const lista = Array.isArray(todas) ? todas : [];
+    // prioriza as que pareçam em aberto (quando vier info de status)
+    const candidatas = lista.filter(c => Number(c.movimentoId) === Number(movimentoId));
+    if (candidatas.length === 0) return null;
+
+    // Se vier status no include, preferir não-liquidado
+    const naoLiquidadas = candidatas.filter(c => {
+      const desc = (c.status?.descricao || '').toLowerCase();
+      return desc !== 'liquidado' && desc !== 'cancelado' && desc !== 'estornado';
+    });
+    if (naoLiquidadas.length > 0) return naoLiquidadas[0];
+
+    // Caso contrário, pega a primeira
+    return candidatas[0];
   }
 
 })();

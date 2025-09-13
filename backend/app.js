@@ -74,11 +74,6 @@ app.listen(PORT, async () => {
 -- 1/2) ADIANTAMENTO
 -- Função: public.fn_gerenciar_adiantamento()
 -- Gatilho: trg_movimento_adiantamento (AFTER INSERT ON public.movimentos)
---
--- Datas de negócio SEMPRE por NEW.data_movimento.
--- Adiantamento:
---   ENTRADA (meio != adiantamento): cria crédito e liquida no dia.
---   CONSUMO (meio  = adiantamento): baixa FIFO e liquida no dia.
 -- ==========================================================
 
 DROP TRIGGER IF EXISTS trg_movimento_adiantamento ON public.movimentos;
@@ -167,21 +162,12 @@ FOR EACH ROW
 EXECUTE FUNCTION public.fn_gerenciar_adiantamento(); `);
 
     // ============================
-    // 2) TÍTULOS: função + trigger (REGRA ESTRITA com tabela de parcelas)
+    // 2) TÍTULOS: função + trigger
     // ============================
     await sequelize.query(`-- ==========================================================
 -- 2/2) CONTAS A RECEBER  (REGRA ESTRITA)
 -- Função: public.fn_gerar_titulos_contas_a_receber()
 -- Gatilho: tr_gerar_titulos_contas_a_receber (AFTER INSERT/UPDATE ON public.movimentos)
---
--- Datas de negócio por NEW.data_movimento.
--- COND 1 (À VISTA): 1 título em aberto, vencimento = data_movimento.
--- COND 3 (ADIANTAMENTO):
---   - ENTRADA (meio != adiantamento): 1 título liquidado no dia.
---   - CONSUMO (meio  = adiantamento): não deve existir título.
--- OUTRAS CONDIÇÕES (≠1 e ≠3): usar EXCLUSIVAMENTE condicao_pagamento_parcelas.
---   - Se não houver parcelas para a condição: ERRO (modo estrito).
---   - Geração N parcelas: venc = data_movimento + dias_para_pagamento(parcela).
 -- ==========================================================
 
 DROP TRIGGER IF EXISTS tr_gerar_titulos_contas_a_receber ON public.movimentos;
@@ -193,10 +179,10 @@ LANGUAGE plpgsql
 AS $$
 DECLARE
   -- Status (ajuste se teus IDs forem outros)
-  v_status_aberto     INTEGER := 1;  -- Em aberto
+  v_status_aberto     INTEGER := 2;  -- Aberto (corrigido)
   v_status_liquidado  INTEGER := 5;  -- Liquidado
 
-  -- Condições (IDs padrão do seed; se mudarem, a regra abaixo ainda cobre)
+  -- Condições
   v_condicao_avista       INTEGER := 1; -- "A VISTA"
   v_condicao_adiantamento INTEGER := 3; -- "ADIANTAMENTO"
 
@@ -231,7 +217,7 @@ BEGIN
     RAISE EXCEPTION 'data_movimento não pode ser NULL para geração de títulos (movimentoId=%).', v_mov_id;
   END IF;
 
-  -- Soft delete: não mexe
+  -- Soft delete
   IF NEW."deletedAt" IS NOT NULL THEN
     RETURN NEW;
   END IF;
@@ -248,13 +234,13 @@ BEGIN
   v_is_adiant_entrada := (v_condicao_id = v_condicao_adiantamento AND v_meio_id IS DISTINCT FROM v_id_meio_adiant);
   v_is_adiant_consumo := (v_condicao_id = v_condicao_adiantamento AND v_meio_id = v_id_meio_adiant);
 
-  -- CONSUMO: remove títulos e sai
+  -- CONSUMO
   IF v_is_adiant_consumo THEN
     DELETE FROM public."contas_a_receber" WHERE "movimentoId" = v_mov_id;
     RETURN NEW;
   END IF;
 
-  -- Limpa títulos para idempotência
+  -- Limpa títulos
   DELETE FROM public."contas_a_receber" WHERE "movimentoId" = v_mov_id;
 
   -- À VISTA
@@ -272,7 +258,7 @@ BEGIN
     RETURN NEW;
   END IF;
 
-  -- ENTRADA de ADIANTAMENTO
+  -- ENTRADA ADIANTAMENTO
   IF v_is_adiant_entrada THEN
     INSERT INTO public."contas_a_receber" (
       "clienteId","movimentoId","dataVencimento","dataPagamento",
@@ -287,7 +273,7 @@ BEGIN
     RETURN NEW;
   END IF;
 
-  -- OUTRAS CONDIÇÕES: offsets SÓ pela tabela filha
+  -- OUTRAS CONDIÇÕES
   SELECT array_agg(cpp.dias_para_pagamento ORDER BY cpp.parcela_numero)
     INTO v_offsets
   FROM public.condicao_pagamento_parcelas cpp
@@ -331,7 +317,7 @@ FOR EACH ROW
 EXECUTE FUNCTION public.fn_gerar_titulos_contas_a_receber();
 `);
 
-    console.log(`🔥 Servidor rodando em http://localhost:${PORT}`);
+    console.log(`🔥 Servidor rodando em http://localhost:${PORT}  B A S E  D E  T E S T E S `);
   } catch (error) {
     console.error('❌ Erro ao sincronizar com o banco:', error);
   }

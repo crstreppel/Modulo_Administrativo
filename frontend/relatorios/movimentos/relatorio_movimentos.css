@@ -74,3 +74,5 @@ table tr:hover {
 table td {
     font-size: 14px;
 }
+
+/* Nota: filtragem no relatório deve considerar APENAS data_movimento */
