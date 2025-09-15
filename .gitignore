@@ -1,7 +1,9 @@
-# --- 🚀 .gitignore ULTRA MEGA HIPER COMPLETO ---
-# (Para projetos em qualquer linguagem + extras)
+# --- 🚀 .gitignore (Bruxão tuned para Petropolitan / EchoPets) ---
 
-### 👩‍💻 Linguagens & Frameworks ###
+#############################
+# 👩‍💻 Linguagens & Frameworks
+#############################
+
 # Python
 __pycache__/
 *.py[cod]
@@ -11,13 +13,16 @@ venv/
 env/
 pip-log.txt
 
-# Node/JavaScript
+# Node / JavaScript
 node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-.pnpm-debug.log*
-dist/
+pnpm-debug.log*
+.eslintcache
+.stylelintcache
+
+# Next/Nuxt (se um dia usar)
 .next/
 .nuxt/
 
@@ -34,7 +39,7 @@ build/
 *.a
 *.so
 *.out
-*.exe
+# (Cuidado ao ignorar *.exe globalmente; deixei de fora para não esconder binários úteis do projeto)
 
 # Ruby
 /.bundle
@@ -45,13 +50,17 @@ build/
 /bin/
 /pkg/
 
-### 🛠️ Ferramentas & IDEs ###
+#############################
+# 🛠️ Ferramentas & IDEs
+#############################
 # VS Code
 .vscode/
 !.vscode/settings.json
 !.vscode/tasks.json
+# (se quiser versionar extensões, remove o comentário abaixo)
+# !.vscode/extensions.json
 
-# IntelliJ
+# IntelliJ / JetBrains
 .idea/
 *.iml
 *.iws
@@ -62,75 +71,141 @@ build/
 .classpath
 *.launch
 
-### 🐋 Docker & Containers ###
-docker-compose*.yml
-**/docker-data/
-**/.env
+#############################
+# 🐋 Docker & Containers
+#############################
+# docker-compose geralmente DEVE ser versionado
+# docker-compose*.yml
 
-### 📦 Sistemas Operacionais ###
+# Dados locais de containers/volumes
+**/docker-data/
+.docker/
+
+#############################
+# 📦 Sistemas Operacionais
+#############################
 # macOS
 .DS_Store
 ._*
 .Spotlight-V100
 .Trashes
 
-# Windows
+# Windows / OneDrive
 Thumbs.db
 Desktop.ini
 $RECYCLE.BIN/
+*.lnk
+~$*
 
 # Linux
 *~
 
-### 📂 Pastas Genéricas ###
-/logs/
-/tmp/
-/temp/
+#############################
+# 📂 Pastas & Arquivos Genéricos
+#############################
+logs/
+*.log
+log/
+tmp/
+temp/
+.tmp/
 *.tmp
 *.bak
 *.swp
-*.txt
 
-### 🔒 Variáveis de Ambiente ###
+# ⚠️ NÃO ignorar *.txt (podem ser documentos do projeto)
+# *.txt
+
+#############################
+# 🔒 Variáveis de Ambiente / Credenciais
+#############################
 .env
-.env.local
-.env*.local
+.env.*
+!.env.example
 secrets.ini
 credentials.json
+*.key
+*.crt
+*.pem
 
-### 🚀 Builds & Deploy ###
-/dist/
-/build/
-/out/
-/.next/
-/.nuxt/
-/.cache/
-*.exe
-*.dll
-*.msi
+#############################
+# 🚀 Builds & Bundles & Caches
+#############################
+dist/
+build/
+out/
+.cache/
+.parcel-cache/
+.cache-loader/
+.nyc_output/
+coverage/
+*.lcov
+junit.xml
 
-### 📚 Documentação Gerada ###
-/docs/_build/
-/site/
-/coverage/
-
-### 🎨 Assets Comprimidos ###
+# Artefatos comprimidos/gerados
+*.map
+*.br
+*.gz
 *.min.js
 *.min.css
 *.svgz
-*.br
-*.gz
 
-### � EXTRA: Projetos Específicos ###
+#############################
+# 📚 Documentação Gerada
+#############################
+docs/_build/
+site/
+
+#############################
+# 🖼️ Assets/Uploads gerados em runtime
+#############################
+uploads/
+public/uploads/
+storage/
+generated/
+
+#############################
+# 🗄️ Banco de Dados / Dumps (PostgreSQL)
+#############################
+*.dump
+*.sql
+*.backup
+*.bak
+# nomes típicos usados por ti
+petropolitan_*.dump
+meu_projeto*.dump
+petropolitan_pro.dump
+
+#############################
+# 🧩 Ferramentas específicas
+#############################
+# PM2 (se gerar logs na pasta do repo)
+pm2*.log
+
+# Storybook / docs builders
+storybook-static/
+docs-dist/
+
+#############################
+# 📱 Mobile / Outros (se aparecerem)
+#############################
 # Android
-/android/local.properties
-/android/build/
+android/local.properties
+android/build/
 
 # iOS
-/Pods/
+Pods/
 *.xcworkspace
 !default.xcworkspace
 
-# diversos
-/melhorias/
-/backend/config/db.js
+#############################
+# 🧠 Diretórios teus (locais)
+#############################
+melhorias/
+
+#############################
+# ⚙️ Config do projeto
+#############################
+# Mantém fora do git por conter credenciais/host/db
+backend/config/db.js
+# Recomendo criar também: backend/config/db.example.js (sem segredos)

@@ -1,0 +1,43 @@
+# --- 🚀 .gitattributes (Bruxão edition) ---
+
+# Normaliza finais de linha (EOL) para evitar conflito Win/Linux
+* text=auto eol=lf
+
+# Força arquivos de código a sempre usar LF
+*.js   text eol=lf
+*.ts   text eol=lf
+*.jsx  text eol=lf
+*.tsx  text eol=lf
+*.css  text eol=lf
+*.scss text eol=lf
+*.html text eol=lf
+*.json text eol=lf
+*.md   text eol=lf
+*.yml  text eol=lf
+*.yaml text eol=lf
+*.sql  text eol=lf
+*.sh   text eol=lf
+*.py   text eol=lf
+
+# Windows-only files (mantém CRLF se precisar abrir no Bloco de Notas)
+*.bat  text eol=crlf
+*.cmd  text eol=crlf
+
+# Binários: nunca mexer em final de linha
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.gif  binary
+*.ico  binary
+*.zip  binary
+*.gz   binary
+*.br   binary
+*.pdf  binary
+*.woff binary
+*.woff2 binary
+*.ttf  binary
+*.eot  binary
+
+# Garantir que o .gitattributes e .gitignore sempre sejam tratados como texto
+.gitattributes text eol=lf
+.gitignore     text eol=lf
