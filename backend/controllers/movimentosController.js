@@ -1,4 +1,5 @@
 // === controller: movimentosController.js ===
+// v2.2.0 — Ajuste: permite baixa parcial de adiantamento (bloqueia só saldo = 0)
 
 const Movimentos = require('../models/Movimentos');
 const Clientes = require('../models/Clientes');
@@ -20,13 +21,14 @@ const { Op } = require('sequelize');
 
 /**
  * Regra de status:
- * - À vista (1) ou Adiantamento (3) => statusId = 5 (liquidado)
- * - A prazo (qualquer outro)        => statusId = 2 (em aberto / padrão)
+ * - À vista (1)             => statusId = 2 (ABERTO)
+ * - Adiantamento (3)        => statusId = 5 (LIQUIDADO)
+ * - A prazo (qualquer outro)=> statusId = 2 (ABERTO)
  */
 function aplicarRegraStatusByCondicao(condicaoPagamentoId) {
   const cp = Number(condicaoPagamentoId);
-  if (cp === 1 || cp === 3) return 5;
-  return 2;
+  if (cp === 3) return 5; // adiantamento nasce liquidado
+  return 2;               // à vista e a prazo nascem abertos
 }
 
 /**
@@ -244,27 +246,19 @@ const listarParaConferencia = async (req, res) => {
 
 /**
  * POST /movimentos
- * Regras:
- *  - cond=1 ou 3 => exige e grava meioPagamentoId; liquida no dia do evento (data_movimento)
- *  - a prazo      => meioPagamentoId = null
- *  - se vier tabelaDePrecosId, usa condicao e valor de lá quando valor não informado/zero
- *  - valida saldo: cond=3 e meio=3 (baixa)
- *  - data_lancamento é SEMPRE do servidor (não vem do body)
- *  - compat: se a UI enviar só data_lancamento, mapeamos para data_movimento
- *  - vencimentos/parcelas dos títulos são gerados pelas triggers de contas_a_receber (não aqui)
  */
 const criarMovimento = async (req, res) => {
   try {
     const {
-      data_movimento,          // opcional
-      data_lancamento,         // compat: se vier, mapeamos para data_movimento
+      data_movimento,
+      data_lancamento,
       clienteId,
       petId,
       servicoId,
       valor,
       condicaoPagamentoId,
       meioPagamentoId,
-      data_liquidacao,         // opcional (normalmente auto em cond 1/3)
+      data_liquidacao,
       observacao,
       tabelaDePrecosId,
     } = req.body;
@@ -275,13 +269,11 @@ const criarMovimento = async (req, res) => {
 
     const hojeISO = new Date().toISOString().split('T')[0];
 
-    // Base do evento
     const dataDigitada = data_movimento || data_lancamento || null;
     const dataEvento = dataDigitada
       ? new Date(dataDigitada).toISOString().split('T')[0]
       : hojeISO;
 
-    // Resolve valor/condição (prioriza tabela quando valor não veio)
     let condicaoId = Number(condicaoPagamentoId);
     let valorServico =
       valor !== undefined && valor !== null ? parseFloat(valor) : 0;
@@ -295,7 +287,6 @@ const criarMovimento = async (req, res) => {
       condicaoId = Number(tabela.condicaoDePagamentoId ?? condicaoId);
     }
 
-    // Regra do meio de pagamento
     let meioId = null;
     if (condicaoId === 1 || condicaoId === 3) {
       if (!meioPagamentoId) {
@@ -306,25 +297,23 @@ const criarMovimento = async (req, res) => {
       meioId = null;
     }
 
-    // Validação de BAIXA DE ADIANTAMENTO (cond=3 e meio=3)
+    // Validação de baixa de adiantamento: só bloqueia se saldo = 0
     if (condicaoId === 3 && meioId === 3) {
       const saldo = await getSaldoAdiantamentoPet(Number(petId));
-      if (saldo <= 0 || saldo < Number(valorServico)) {
+      if (saldo <= 0) {
         return res.status(400).json({
-          erro: 'Não é possível lançar a baixa de adiantamento: o saldo de adiantamento do pet está zerado ou insuficiente.',
+          erro: 'Não é possível lançar a baixa de adiantamento: o saldo de adiantamento do pet está zerado.',
         });
       }
     }
 
-    // Liquidação automática para 1 e 3
     let data_liquidacao_calc = data_liquidacao || null;
-    if (condicaoId === 1 || condicaoId === 3) {
+    if (condicaoId === 3) {
       data_liquidacao_calc = dataEvento;
     }
 
     const statusId = aplicarRegraStatusByCondicao(condicaoId);
 
-    // NÃO enviar data_lancamento: o model grava CURRENT_DATE no banco
     const movimento = await Movimentos.create({
       data_movimento: dataEvento,
       clienteId,
@@ -348,24 +337,20 @@ const criarMovimento = async (req, res) => {
 
 /**
  * PUT /movimentos/:id
- * - data_lancamento é imutável (ignoramos se vier)
- * - reavalia liquidação a partir da data do evento (vencimentos são responsabilidade de contas_a_receber)
- * - valida saldo quando virar baixa (cond=3 e meio=3)
- * - compat: se a UI enviar só data_lancamento, mapeamos para data_movimento
  */
 const atualizarMovimento = async (req, res) => {
   const { id } = req.params;
   try {
     const {
       data_movimento,
-      data_lancamento, // compat
+      data_lancamento,
       clienteId,
       petId,
       servicoId,
       valor,
       condicaoPagamentoId,
       meioPagamentoId,
-      data_liquidacao, // opcional; caso não venha, recalculamos para cond 1/3
+      data_liquidacao,
       observacao,
       tabelaDePrecosId,
     } = req.body;
@@ -373,7 +358,6 @@ const atualizarMovimento = async (req, res) => {
     const movimento = await Movimentos.findByPk(id);
     if (!movimento) return res.status(404).json({ erro: 'Movimento não encontrado.' });
 
-    // Resolve condicao/valor finais (prioriza tabela, se informada)
     let condicaoId = Number(condicaoPagamentoId ?? movimento.condicaoPagamentoId);
     let valorFinal =
       valor !== undefined && valor !== null ? parseFloat(valor) : Number(movimento.valor);
@@ -387,7 +371,6 @@ const atualizarMovimento = async (req, res) => {
       condicaoId = Number(tabela.condicaoDePagamentoId ?? condicaoId);
     }
 
-    // Regra do meio de pagamento
     let meioId = null;
     if (condicaoId === 1 || condicaoId === 3) {
       if (!meioPagamentoId && !movimento.meioPagamentoId) {
@@ -398,18 +381,17 @@ const atualizarMovimento = async (req, res) => {
       meioId = null;
     }
 
-    // Validação de BAIXA DE ADIANTAMENTO (cond=3 e meio=3)
+    // Validação de baixa de adiantamento: só bloqueia se saldo = 0
     const petParaValidar = Number(petId ?? movimento.petId);
     if (condicaoId === 3 && meioId === 3) {
       const saldo = await getSaldoAdiantamentoPet(petParaValidar);
-      if (saldo <= 0 || saldo < Number(valorFinal)) {
+      if (saldo <= 0) {
         return res.status(400).json({
-          erro: 'Não é possível atualizar para baixa de adiantamento: o saldo de adiantamento do pet está zerado ou insuficiente.',
+          erro: 'Não é possível atualizar para baixa de adiantamento: o saldo de adiantamento do pet está zerado.',
         });
       }
     }
 
-    // Base: data do evento
     const dataDigitada =
       data_movimento ||
       data_lancamento ||
@@ -417,17 +399,19 @@ const atualizarMovimento = async (req, res) => {
       movimento.data_lancamento;
     const dataEvento = new Date(dataDigitada).toISOString().split('T')[0];
 
-    // Liquidação (se não vier explicitamente)
     let liquidacaoFinal =
       data_liquidacao ?? movimento.data_liquidacao ?? null;
-    if (condicaoId === 1 || condicaoId === 3) {
+    if (condicaoId === 3) {
       liquidacaoFinal = dataEvento;
+    } else if (condicaoId === 1) {
+      if (data_liquidacao === null) {
+        liquidacaoFinal = null;
+      }
     }
 
     const statusId = aplicarRegraStatusByCondicao(condicaoId);
 
     await movimento.update({
-      // data_lancamento: NÃO ATUALIZA
       data_movimento: dataEvento,
       clienteId: clienteId ?? movimento.clienteId,
       petId: petId ?? movimento.petId,

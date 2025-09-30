@@ -98,6 +98,14 @@ const Movimentos = sequelize.define('Movimentos', {
     allowNull: true,
     references: { model: Adiantamentos, key: 'id' },
   },
+
+  // Novo: quanto do valor foi abatido por adiantamento
+  valorAbatidoAdiantamento: {
+    type: DataTypes.DECIMAL(10, 2),
+    allowNull: true,
+    defaultValue: 0,
+  },
+
 }, {
   tableName: 'movimentos',
   timestamps: true,

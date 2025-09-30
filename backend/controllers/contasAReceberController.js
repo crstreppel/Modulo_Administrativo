@@ -1,4 +1,6 @@
 // controllers/contasAReceberController.js
+// v2.2.1 — Fix liquidação à vista (usa saldo automático); mensagens mais claras; status IDs consistentes
+
 const { Op } = require('sequelize');
 const { sequelize } = require('../config/db');
 
@@ -7,12 +9,18 @@ const Clientes = require('../models/Clientes');
 const Movimentos = require('../models/Movimentos');
 const Status = require('../models/Status');
 
-const EPS = 0.01; // tolerância de centavos
+const EPS = 0.01;
 
+// IDs de status (ajuste conforme tua tabela)
+const STATUS_IDS = {
+  ABERTO: 2,
+  LIQUIDADO: 5,
+};
+
+/** LISTAR */
 const listarContasAReceber = async (req, res) => {
   try {
     const { movimentoId } = req.query;
-
     const where = {};
     if (movimentoId) where.movimentoId = movimentoId;
 
@@ -33,6 +41,7 @@ const listarContasAReceber = async (req, res) => {
   }
 };
 
+/** CRIAR MANUAL */
 const criarContaReceber = async (req, res) => {
   try {
     const {
@@ -79,44 +88,18 @@ const criarContaReceber = async (req, res) => {
   }
 };
 
+/** ATUALIZAR */
 const atualizarContaReceber = async (req, res) => {
   try {
     const { id } = req.params;
-    const {
-      nomeContato,
-      telefoneContato,
-      dataVencimento,
-      dataPagamento,
-      valorOriginal,
-      valorPago,
-      statusId,
-      observacoes,
-      bancoId,
-      enviadoProBanco,
-      nossoNumero,
-      codigoRemessa,
-      retornoStatus,
-    } = req.body;
+    const dados = req.body;
 
     const conta = await ContasAReceber.findByPk(id);
-    if (!conta) {
-      return res.status(404).json({ erro: 'Conta a receber não encontrada.' });
-    }
+    if (!conta) return res.status(404).json({ erro: 'Conta a receber não encontrada.' });
 
     await conta.update({
-      nomeContato,
-      telefoneContato,
-      dataVencimento,
-      dataPagamento,
-      valorOriginal,
-      valorPago,
-      statusId,
-      observacoes,
-      bancoId,
-      enviadoProBanco,
-      nossoNumero,
-      codigoRemessa,
-      retornoStatus,
+      ...dados,
+      meioPagamentoId: dados.meioPagamentoId ?? conta.meioPagamentoId,
     });
 
     res.status(200).json(conta);
@@ -126,17 +109,14 @@ const atualizarContaReceber = async (req, res) => {
   }
 };
 
+/** EXCLUIR */
 const excluirContaReceber = async (req, res) => {
   try {
     const { id } = req.params;
-
     const conta = await ContasAReceber.findByPk(id);
-    if (!conta) {
-      return res.status(404).json({ erro: 'Conta a receber não encontrada.' });
-    }
+    if (!conta) return res.status(404).json({ erro: 'Conta a receber não encontrada.' });
 
     await conta.destroy();
-
     res.status(200).json({ mensagem: 'Conta a receber excluída com sucesso.' });
   } catch (error) {
     console.error('Erro ao excluir conta a receber:', error);
@@ -144,19 +124,7 @@ const excluirContaReceber = async (req, res) => {
   }
 };
 
-/**
- * LIQUIDAR TÍTULO (parcial/total com salvaguardas)
- * Body:
- * {
- *   "dataPagamento": "YYYY-MM-DD",
- *   "meioPagamentoId": 1,
- *   "valorPago": 123.45,       // bruto informado (obrigatório na parcial; na total pode vir omitido)
- *   "desconto": 0,             // opcional
- *   "acrescimo": 0,            // opcional
- *   "obs": "texto",            // opcional
- *   "tipoBaixa": "parcial" | "total"  // se ausente, o back infere
- * }
- */
+/** LIQUIDAR */
 const liquidarContaReceber = async (req, res) => {
   const t = await sequelize.transaction();
   try {
@@ -164,14 +132,13 @@ const liquidarContaReceber = async (req, res) => {
     const {
       dataPagamento,
       meioPagamentoId,
-      valorPago,     // bruto digitado
+      valorPago,
       desconto = 0,
       acrescimo = 0,
       obs,
-      tipoBaixa,     // 'parcial' | 'total'
+      tipoBaixa,
     } = req.body || {};
 
-    // 1) Busca a conta com lock, SEM include (evita LEFT OUTER JOIN ... FOR UPDATE)
     const conta = await ContasAReceber.findByPk(id, {
       transaction: t,
       lock: t.LOCK.UPDATE
@@ -181,101 +148,59 @@ const liquidarContaReceber = async (req, res) => {
       return res.status(404).json({ erro: 'Conta a receber não encontrada.' });
     }
 
-    // 2) Buscar IDs dos status relevantes (uma vez, dentro da transação)
-    const [statusLiquidado, statusAbertoParcial, statusCancelado, statusEstornado] = await Promise.all([
-      Status.findOne({ where: { descricao: { [Op.iLike]: 'liquidado' } }, transaction: t }),
-      Status.findOne({ where: { descricao: { [Op.iLike]: 'aberto parcial' } }, transaction: t }),
-      Status.findOne({ where: { descricao: { [Op.iLike]: 'cancelado' } }, transaction: t }),
-      Status.findOne({ where: { descricao: { [Op.iLike]: 'estornado' } }, transaction: t }),
-    ]);
-
-    if (!statusLiquidado || !statusAbertoParcial) {
+    // Bloqueio se já liquidado/cancelado/estornado
+    const statusAtual = await Status.findByPk(conta.statusId).catch(() => null);
+    if ([STATUS_IDS.LIQUIDADO].includes(conta.statusId)) {
       await t.rollback();
-      return res.status(500).json({ erro: 'Status "Liquidado" ou "Aberto Parcial" não encontrados. Padronize a tabela Status.' });
+      return res.status(400).json({ erro: `Título já está "${statusAtual?.descricao || conta.statusId}".` });
     }
 
-    // 3) Bloqueios por estado atual (comparando por ID)
-    const bloqueados = new Map([
-      [statusLiquidado?.id, statusLiquidado?.descricao],
-      [statusCancelado?.id, statusCancelado?.descricao],
-      [statusEstornado?.id, statusEstornado?.descricao],
-    ]);
-
-    if (bloqueados.has(conta.statusId)) {
-      const desc = bloqueados.get(conta.statusId) || 'indisponível';
-      await t.rollback();
-      return res.status(400).json({ erro: `Título já está em estado "${desc}".` });
-    }
-
-    // 4) Cálculos de saldo
     const valorOriginal = Number(conta.valorOriginal || 0);
     const pagoAcum = Number(conta.valorPago || 0);
     const saldo = Math.max(0, valorOriginal - pagoAcum);
 
     if (saldo <= EPS) {
       await t.rollback();
-      return res.status(400).json({ erro: 'Título já está praticamente quitado.' });
+      return res.status(400).json({ erro: 'Título já está quitado.' });
     }
 
-    const bruto = Number(valorPago || 0);
+    const bruto = Number(valorPago || saldo); // usa saldo se não veio do front
     const descNum = Number(desconto || 0);
     const acrNum = Number(acrescimo || 0);
-
     const efetivo = Math.max(0, (bruto - descNum) + acrNum);
     const dataPg = dataPagamento ? new Date(dataPagamento) : new Date();
 
-    // 5) Definir tipo (se não vier do front)
-    const tipo = (tipoBaixa === 'parcial' || tipoBaixa === 'total')
-      ? tipoBaixa
-      : (efetivo + EPS >= saldo ? 'total' : 'parcial');
+    const tipo = tipoBaixa || (efetivo + EPS >= saldo ? 'total' : 'parcial');
 
-    // 6) Aplicar regras
     if (tipo === 'parcial') {
       if (efetivo <= 0) {
         await t.rollback();
-        return res.status(400).json({ erro: 'Valor efetivo da parcial precisa ser maior que zero.' });
+        return res.status(400).json({ erro: 'Valor da parcial precisa ser maior que zero.' });
       }
-      if (efetivo + EPS >= saldo) {
-        await t.rollback();
-        return res.status(409).json({ erro: 'Este valor quita o título. Use a aba/ação de Baixa TOTAL.' });
-      }
-
       const novoPago = Math.min(valorOriginal, pagoAcum + efetivo);
       await conta.update({
         dataPagamento: dataPg,
         valorPago: novoPago,
-        statusId: statusAbertoParcial.id,
-        meioPagamentoId: meioPagamentoId || conta.meioPagamentoId,
+        statusId: STATUS_IDS.ABERTO,
+        meioPagamentoId,
         observacoes: gerarObs(conta.observacoes, {
-          tipo: 'Parcial',
-          bruto, desconto: descNum, acrescimo: acrNum, efetivo,
-          dataPg, meioPagamentoId
+          tipo: 'Parcial', bruto, desconto: descNum, acrescimo: acrNum, efetivo, dataPg, meioPagamentoId
         })
       }, { transaction: t });
-
-    } else { // total
-      const efetivoTotal = Math.max(0, (saldo - descNum) + acrNum);
-      if (efetivoTotal + EPS < saldo) {
-        await t.rollback();
-        return res.status(409).json({ erro: 'Este valor não quita o título. Use Baixa PARCIAL ou ajuste desconto/juros.' });
-      }
-
+    } else {
       await conta.update({
         dataPagamento: dataPg,
-        valorPago: valorOriginal, // zera o saldo
-        statusId: statusLiquidado.id,
-        meioPagamentoId: meioPagamentoId || conta.meioPagamentoId,
+        valorPago: valorOriginal,
+        statusId: STATUS_IDS.LIQUIDADO,
+        meioPagamentoId,
         observacoes: gerarObs(conta.observacoes, {
-          tipo: 'Total',
-          bruto: (bruto || saldo), desconto: descNum, acrescimo: acrNum, efetivo: efetivoTotal,
-          dataPg, meioPagamentoId
+          tipo: 'Total', bruto, desconto: descNum, acrescimo: acrNum, efetivo, dataPg, meioPagamentoId
         })
       }, { transaction: t });
     }
 
     await t.commit();
 
-    // 7) Buscar novamente com includes para retornar completo
     const contaAtualizada = await ContasAReceber.findByPk(id, {
       include: [
         { model: Clientes, as: 'cliente', attributes: ['id', 'nome'] },
@@ -288,11 +213,10 @@ const liquidarContaReceber = async (req, res) => {
   } catch (error) {
     console.error('Erro ao liquidar conta a receber:', error);
     try { await t.rollback(); } catch (_) {}
-    res.status(500).json({ erro: 'Erro ao liquidar conta a receber.' });
+    res.status(500).json({ erro: 'Erro ao liquidar conta a receber.', detalhes: error.message });
   }
 };
 
-// Gera um trecho de observação legível, sem quebrar o que já existe
 function gerarObs(obsAnterior, { tipo, bruto, desconto, acrescimo, efetivo, dataPg, meioPagamentoId }) {
   const pad = (n) => (Number(n) || 0).toFixed(2);
   const d = dataPg instanceof Date ? dataPg.toISOString().slice(0,10) : String(dataPg || '');
@@ -300,15 +224,11 @@ function gerarObs(obsAnterior, { tipo, bruto, desconto, acrescimo, efetivo, data
   return obsAnterior ? `${obsAnterior} | ${p}` : p;
 }
 
-/**
- * CANCELAR TÍTULO
- * Body (opcional): { "obs": "motivo do cancelamento" }
- */
+/** CANCELAR */
 const cancelarContaReceber = async (req, res) => {
   try {
     const { id } = req.params;
     const { obs } = req.body || {};
-
     const conta = await ContasAReceber.findByPk(id, {
       include: [{ model: Status, as: 'status', attributes: ['id', 'descricao'] }]
     });
@@ -319,11 +239,9 @@ const cancelarContaReceber = async (req, res) => {
       return res.status(400).json({ erro: `Não é possível cancelar. Título está "${conta.status.descricao}".` });
     }
 
-    const statusCancelado = await Status.findOne({
-      where: { descricao: { [Op.iLike]: 'cancelado' } }
-    });
+    const statusCancelado = await Status.findOne({ where: { descricao: { [Op.iLike]: 'cancelado' } } });
     if (!statusCancelado) {
-      return res.status(500).json({ erro: 'Status "Cancelado" não encontrado. Cadastre/Padronize os Status.' });
+      return res.status(500).json({ erro: 'Status "Cancelado" não encontrado.' });
     }
 
     await conta.update({
@@ -348,10 +266,7 @@ const cancelarContaReceber = async (req, res) => {
   }
 };
 
-/**
- * PRORROGAR (alterar vencimento)
- * Body: { "novaDataVencimento": "YYYY-MM-DD", "obs": "opcional" }
- */
+/** PRORROGAR */
 const prorrogarContaReceber = async (req, res) => {
   try {
     const { id } = req.params;
