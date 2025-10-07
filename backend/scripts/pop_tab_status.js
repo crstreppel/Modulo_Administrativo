@@ -17,7 +17,9 @@ async function popularStatus() {
       { id: 3, descricao: 'ABERTO PARCIAL' },
       { id: 4, descricao: 'INATIVO' },
       { id: 5, descricao: 'LIQUIDADO' },
-      { id: 6, descricao: 'FALECIDO' }
+      { id: 6, descricao: 'FALECIDO' },
+      { id: 7, descricao: 'CANCELADO' },
+      { id: 6, descricao: 'AJUSTE' }
     ];
 
     // 3. Upsert (insere ou atualiza se o ID já existir)

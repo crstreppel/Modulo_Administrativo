@@ -1,0 +1,136 @@
+/* layout básico */
+body {
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, 'Open Sans', 'Helvetica Neue', Arial, sans-serif;
+  background: #f5f7fb;
+  color: #111827;
+  margin: 0;
+}
+.topbar {
+  background: #111827;
+  color: #fff;
+  padding: 1.25rem 1rem;
+}
+.topbar h1 { margin: 0 0 .25rem 0; font-weight: 700; }
+.topbar p { margin: 0; opacity: .85; }
+
+.container {
+  max-width: 1080px;
+  margin: 1.5rem auto;
+  padding: 0 1rem;
+}
+
+/* cards */
+.card {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 6px 24px rgba(0,0,0,.06);
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+.row {
+  display: flex; gap: 1rem; align-items: end; flex-wrap: wrap;
+}
+.col { flex: 1 1 280px; min-width: 240px; }
+.col.right { display: flex; justify-content: flex-end; align-items: end; }
+
+label { display: block; font-weight: 600; margin-bottom: .35rem; }
+input[type="date"], textarea {
+  width: 100%; padding: .6rem .7rem; border: 1px solid #d1d5db; border-radius: 8px; font-size: .95rem;
+  background: #fff;
+}
+textarea { resize: vertical; }
+.hint { color: #6b7280; }
+
+/* buttons */
+.btn {
+  padding: .7rem 1rem; border: 0; border-radius: 8px; cursor: pointer; font-weight: 600; background: #e5e7eb;
+}
+.btn.primary { background: #2563eb; color: #fff; }
+.btn.primary:hover { background: #1d4ed8; }
+.btn.danger { background: #e11d48; color: #fff; }
+.btn.danger:hover { background: #be123c; }
+.btn[disabled] { opacity: .6; cursor: not-allowed; }
+
+/* tabela */
+.table-wrapper { overflow: auto; border-radius: 8px; border: 1px solid #e5e7eb; }
+table { width: 100%; border-collapse: collapse; min-width: 840px; }
+th, td { padding: .7rem .6rem; border-bottom: 1px solid #eef2f7; }
+thead th { background: #f7f7fb; font-size: .9rem; text-align: left; color: #374151; }
+tbody td.center { text-align: center; }
+.muted { color: #9aa3af; }
+
+/* status chips */
+.chip { display: inline-block; padding: .15rem .45rem; border-radius: 999px; font-size: .8rem; }
+.chip.aberto { background: #eff6ff; color: #1d4ed8; }
+.chip.parcial { background: #fef3c7; color: #92400e; }
+.chip.liquidado { background: #dcfce7; color: #166534; }
+.chip.cancelado { background: #fee2e2; color: #991b1b; }
+.chip.ajuste { background: #f3e8ff; color: #6d28d9; }
+
+/* feedback da lista */
+.feedback { margin-top: .6rem; font-size: .95rem; }
+.feedback.ok { color: #166534; }
+.feedback.err { color: #991b1b; }
+
+/* modal */
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,.45);
+  display: flex; align-items: center; justify-content: center; padding: 1rem; z-index: 50;
+}
+.modal-overlay.hidden { display: none; }
+.modal {
+  width: 100%; max-width: 900px; background: #fff; border-radius: 12px; box-shadow: 0 16px 40px rgba(0,0,0,.25);
+}
+.modal-header, .modal-footer { padding: 1rem 1rem; border-bottom: 1px solid #eee; }
+.modal-footer { border-top: 1px solid #eee; border-bottom: 0; display: flex; justify-content: flex-end; gap: .5rem; }
+.modal-body { padding: 1rem; }
+.icon-btn { background: transparent; border: 0; font-size: 1.1rem; cursor: pointer; }
+
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+@media (max-width: 860px) { .grid-2 { grid-template-columns: 1fr; } }
+
+.pre-box {
+  background: #0b1020; color: #d1e7ff; padding: .8rem; border-radius: 8px; min-height: 180px; white-space: pre-wrap;
+}
+/* === Toast Bruxão === */
+.toast-container {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  z-index: 9999;
+  pointer-events: none;
+}
+
+.toast {
+  opacity: 0;
+  transform: translateY(-10px);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  padding: 10px 16px;
+  border-radius: 8px;
+  color: #fff;
+  font-weight: 500;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.25);
+  pointer-events: all;
+  user-select: none;
+}
+
+.toast.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.toast.ok {
+  background-color: #28a745;
+}
+
+.toast.err {
+  background-color: #dc3545;
+}
+
+.toast.info {
+  background-color: #007bff;
+}

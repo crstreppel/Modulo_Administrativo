@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Cancelar Movimento</title>
+  <link rel="stylesheet" href="../../css/global.css">
+  <link rel="stylesheet" href="./cancelar_movimento.css" />
+</head>
+<body>
+  <header class="topbar">
+    <h1>🧨 Cancelar Movimento</h1>
+    <p>Selecione uma data, marque um movimento e confirme o cancelamento com motivo.</p>
+  </header>
+
+  <main class="container">
+    <section class="filtros card">
+      <div class="row">
+        <div class="col">
+          <label for="dataMov">Data do movimento</label>
+          <input type="date" id="dataMov" />
+        </div>
+        <div class="col">
+          <button id="btnBuscar" class="btn primary">Buscar movimentos</button>
+        </div>
+        <div class="col right">
+          <button id="btnCancelarSelecionado" class="btn danger" disabled>Cancelar selecionado</button>
+        </div>
+      </div>
+      <small class="hint">Dica: só é possível cancelar **um** movimento por vez.</small>
+    </section>
+
+    <section class="lista card">
+      <div class="table-wrapper">
+        <table id="tabelaMovimentos">
+          <thead>
+            <tr>
+              <th style="width:48px;">Sel</th>
+              <th>ID</th>
+              <th>Cliente</th>
+              <th>Pet</th>
+              <th>Serviço</th>
+              <th>Valor</th>
+              <th>Status</th>
+              <th>Data</th>
+            </tr>
+          </thead>
+          <tbody id="tbodyMovimentos">
+            <tr><td colspan="8" class="center muted">Selecione uma data e clique em “Buscar movimentos”.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div id="feedbackLista" class="feedback"></div>
+    </section>
+  </main>
+
+  <!-- Modal -->
+  <div id="modalOverlay" class="modal-overlay hidden" aria-hidden="true">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>Confirmar cancelamento</h2>
+        <button id="modalClose" class="icon-btn" aria-label="Fechar modal">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="grid-2">
+          <div>
+            <h3>Resumo (fixo)</h3>
+            <pre id="resumoFixo" class="pre-box" readonly></pre>
+          </div>
+          <div>
+            <h3>Motivo adicional</h3>
+            <textarea id="motivoAdicional" rows="8" placeholder="Descreva o motivo adicional..."></textarea>
+            <small class="hint">O texto do resumo é fixo e será gravado. Você pode **acrescentar** um motivo adicional aqui.</small>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button id="modalCancelar" class="btn">Voltar</button>
+        <button id="modalConfirmar" class="btn danger">Confirmar cancelamento</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  <script src="./cancelar_movimento.js"></script>
+</body>
+</html>

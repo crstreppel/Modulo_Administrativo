@@ -1,9 +1,18 @@
-/* Arquivo app.js */
+/* =============================================================
+ * Arquivo app.js • v4.0 - Padrão Bruxão Modular & Clean 🧙‍♂️
+ * -------------------------------------------------------------
+ * - Mantém estrutura original da versão 1
+ * - Remove SQL inline (agora em utils/)
+ * - Executa criação de funções, triggers e views automaticamente
+ * - Ignora movimentos CANCELADO (7) e AJUSTE (8)
+ * - Logs padronizados estilo Bruxão
+ * -------------------------------------------------------------
+*/
 
 const express = require('express');
 const cors = require('cors');
-
-const { sequelize } = require('./config/db'); // pega direto do config/db.js
+const { sequelize } = require('./config/db'); // conexão direta
+const { runDatabaseSetup } = require('./utils'); // orquestra funções/triggers/views
 
 // ===== Patch: flag de force via CLI/env =====
 // Liga com: `node app.js --force` ou `FORCE_SYNC=1 node app.js`
@@ -43,321 +52,34 @@ app.use(express.json());
 
 // Rota teste raiz
 app.get('/', (req, res) => {
-  res.send('API do Módulo Administrativo está rodando.');
+  res.send('API do Módulo Administrativo está rodando. 🧩');
 });
 
 // Define rotas
-app.use('/api/status',      statusRoutes);
-app.use('/api/servicos',    servicosRoutes);
-app.use('/api/racas',       racasRoutes);
-app.use('/api/clientes',    clientesRoutes);
-app.use('/api/especies',    especieRoutes);
+app.use('/api/status', statusRoutes);
+app.use('/api/servicos', servicosRoutes);
+app.use('/api/racas', racasRoutes);
+app.use('/api/clientes', clientesRoutes);
+app.use('/api/especies', especieRoutes);
 app.use('/api/condicoes-de-pagamento', condicaoDePagamentoRoutes);
-app.use('/api/meios-de-pagamento',     meioDePagamentoRoutes);
-app.use('/api/pets',        petsRoutes);
+app.use('/api/meios-de-pagamento', meioDePagamentoRoutes);
+app.use('/api/pets', petsRoutes);
 app.use('/api/tabela-de-precos', tabelaDePrecosRoutes);
-app.use('/api/movimentos',  movimentosRoutes);
-app.use('/api/contas-a-receber', contasAReceberRoutes); // rota OK
+app.use('/api/movimentos', movimentosRoutes);
+app.use('/api/contas-a-receber', contasAReceberRoutes);
 
 // Inicializa servidor
 const PORT = 3000;
 
 app.listen(PORT, async () => {
   try {
-    // Em dev: recria tudo conforme a flag
     await sequelize.sync({ force: FORCE_SYNC, logging: false });
+    console.log('🧠 Sequelize sincronizado com sucesso.');
 
-    // ============================
-    // 1) ADIANTAMENTO: função + trigger
-    // ============================
-    await sequelize.query(`-- ==========================================================
--- 1/2) ADIANTAMENTO (v2.3 - grava valorAbatidoAdiantamento)
--- ==========================================================
-
-DROP TRIGGER IF EXISTS trg_movimento_adiantamento ON public.movimentos;
-DROP FUNCTION IF EXISTS public.fn_gerenciar_adiantamento();
-
-CREATE FUNCTION public.fn_gerenciar_adiantamento()
-RETURNS trigger
-LANGUAGE plpgsql
-AS $$
-DECLARE
-  v_id_meio_adiant  INTEGER;
-  v_data_mov        DATE;
-  v_consumir        NUMERIC(10,2);
-  v_faltante        NUMERIC(10,2);
-  v_adi_id          INTEGER;
-  v_adi_saldo       NUMERIC(10,2);
-  v_total_abatido   NUMERIC(10,2) := 0;
-BEGIN
-  -- Só entra se for condição de adiantamento
-  IF NEW."condicaoPagamentoId" <> 3 THEN
-    RETURN NEW;
-  END IF;
-
-  v_data_mov := COALESCE(NEW.data_movimento, NEW.data_lancamento);
-
-  -- Identifica meio de pagamento "adiantamento"
-  SELECT id INTO v_id_meio_adiant
-  FROM public.meio_de_pagamento
-  WHERE descricao ILIKE 'adiant%'
-  ORDER BY id
-  LIMIT 1;
-
-  -- ENTRADA (novo crédito)
-  IF NEW."meioPagamentoId" IS DISTINCT FROM v_id_meio_adiant THEN
-    INSERT INTO public.adiantamentos
-      ("clienteId","petId","valorTotal","saldoAtual","dataPagamento","observacoes","status","createdAt","updatedAt")
-    VALUES
-      (NEW."clienteId", NEW."petId", NEW.valor, NEW.valor, v_data_mov, NEW.observacao, 'ativo', NOW(), NOW())
-    RETURNING id INTO v_adi_id;
-
-    UPDATE public.movimentos
-       SET "statusId"       = 5,
-           data_liquidacao  = v_data_mov,
-           "adiantamentoId" = v_adi_id,
-           "valorAbatidoAdiantamento" = NEW.valor,
-           "observacao"     = COALESCE(NEW.observacao,'') || ' | Entrada de adiantamento'
-     WHERE id = NEW.id;
-
-    RETURN NEW;
-  END IF;
-
-  -- CONSUMO (abate em ordem FIFO)
-  v_faltante := NEW.valor;
-
-  FOR v_adi_id, v_adi_saldo IN
-    SELECT a.id, a."saldoAtual"
-    FROM public.adiantamentos a
-    WHERE a."clienteId" = NEW."clienteId"
-      AND a."petId"     = NEW."petId"
-      AND a."status"   <> 'encerrado'
-      AND a."saldoAtual" > 0
-    ORDER BY a."dataPagamento" ASC, a.id ASC
-    FOR UPDATE
-  LOOP
-    EXIT WHEN v_faltante <= 0;
-
-    v_consumir := LEAST(v_faltante, v_adi_saldo);
-
-    UPDATE public.adiantamentos
-       SET "saldoAtual" = "saldoAtual" - v_consumir,
-           "status"     = CASE WHEN ("saldoAtual" - v_consumir) <= 0 THEN 'encerrado' ELSE "status" END,
-           "updatedAt"  = NOW()
-     WHERE id = v_adi_id;
-
-    v_faltante := v_faltante - v_consumir;
-    v_total_abatido := v_total_abatido + v_consumir;
-  END LOOP;
-
-  -- Atualiza o movimento conforme resultado
-  IF v_total_abatido = NEW.valor THEN
-    UPDATE public.movimentos
-       SET "statusId"       = 5,
-           data_liquidacao  = v_data_mov,
-           "valorAbatidoAdiantamento" = v_total_abatido,
-           "observacao"     = COALESCE(NEW.observacao,'') || 
-                              ' | Liquidado via adiantamento: R$ ' || to_char(v_total_abatido, 'FM999999990.00')
-     WHERE id = NEW.id;
-  ELSIF v_total_abatido > 0 THEN
-    UPDATE public.movimentos
-       SET "statusId"       = 2,
-           "valorAbatidoAdiantamento" = v_total_abatido,
-           "observacao"     = COALESCE(NEW.observacao,'') || 
-                              ' | Baixa parcial via adiantamento: R$ ' || to_char(v_total_abatido, 'FM999999990.00')
-     WHERE id = NEW.id;
-  ELSE
-    RAISE EXCEPTION 'Saldo insuficiente para cliente %, pet %: necessário=%, disponível=0',
-      NEW."clienteId", NEW."petId", NEW.valor;
-  END IF;
-
-  RETURN NEW;
-END;
-$$;
-
-CREATE TRIGGER trg_movimento_adiantamento
-AFTER INSERT ON public.movimentos
-FOR EACH ROW
-EXECUTE FUNCTION public.fn_gerenciar_adiantamento(); `);
-
-    // ============================
-    // 2) TÍTULOS: função + trigger
-    // ============================
-    await sequelize.query(`-- ==========================================================
--- 2/2) CONTAS A RECEBER (v2.4 - usa valorAbatidoAdiantamento + parcelas dinâmicas)
--- ==========================================================
-
-DROP TRIGGER IF EXISTS tr_gerar_titulos_contas_a_receber ON public.movimentos;
-DROP FUNCTION IF EXISTS public.fn_gerar_titulos_contas_a_receber();
-
-CREATE FUNCTION public.fn_gerar_titulos_contas_a_receber()
-RETURNS trigger
-LANGUAGE plpgsql
-AS $$
-DECLARE
-  v_status_aberto     INTEGER := 2;  -- Aberto
-  v_status_liquidado  INTEGER := 5;  -- Liquidado
-  v_status_parcial    INTEGER := 3;  -- Parcial
-
-  v_condicao_avista       INTEGER := 1;
-  v_condicao_adiantamento INTEGER := 3;
-
-  v_id_meio_adiant INTEGER;
-
-  v_mov_id      INTEGER := NEW."id";
-  v_cliente_id  INTEGER := NEW."clienteId";
-  v_valor       NUMERIC := NEW."valor";
-  v_valor_pago  NUMERIC := NEW."valorAbatidoAdiantamento";
-  v_data_evt    DATE    := NEW."data_movimento";
-  v_condicao_id INTEGER := NEW."condicaoPagamentoId";
-  v_meio_id     INTEGER := NEW."meioPagamentoId";
-
-  v_total_parcelas       INTEGER;
-  v_total_centavos       INTEGER;
-  v_base_parcela_cent    INTEGER;
-  v_resto_centavos       INTEGER;
-  v_i                    INTEGER := 0;
-  v_parcela_centavos     INTEGER;
-  v_parcela_valor        NUMERIC(10,2);
-BEGIN
-  IF v_data_evt IS NULL THEN
-    RAISE EXCEPTION 'data_movimento não pode ser NULL para geração de títulos (movimentoId=%).', v_mov_id;
-  END IF;
-
-  -- Soft delete
-  IF NEW."deletedAt" IS NOT NULL THEN
-    RETURN NEW;
-  END IF;
-
-  -- Meio adiantamento
-  SELECT id INTO v_id_meio_adiant
-  FROM public.meio_de_pagamento
-  WHERE descricao ILIKE 'adiant%'
-  ORDER BY id
-  LIMIT 1;
-
-  -- Limpa títulos anteriores do movimento
-  DELETE FROM public."contas_a_receber" WHERE "movimentoId" = v_mov_id;
-
-  -- (A) Consumo de adiantamento: gera título somente se faltou saldo
-  IF v_condicao_id = v_condicao_adiantamento AND v_meio_id = v_id_meio_adiant THEN
-    IF v_valor_pago < v_valor THEN
-      INSERT INTO public."contas_a_receber" (
-        "clienteId","movimentoId","dataVencimento",
-        "valorOriginal","valorPago","statusId","observacoes",
-        "createdAt","updatedAt"
-      ) VALUES (
-        v_cliente_id, v_mov_id, v_data_evt,
-        v_valor - v_valor_pago, 0, v_status_parcial,
-        'Título gerado do saldo não coberto pelo adiantamento',
-        NOW(), NOW()
-      );
-    END IF;
-    RETURN NEW;
-  END IF;
-
-  -- (B) À vista (1): 1 título na data do movimento
-  IF v_condicao_id = v_condicao_avista THEN
-    INSERT INTO public."contas_a_receber" (
-      "clienteId","movimentoId","dataVencimento",
-      "valorOriginal","valorPago","statusId","observacoes",
-      "createdAt","updatedAt"
-    ) VALUES (
-      v_cliente_id, v_mov_id, v_data_evt,
-      v_valor, 0, v_status_aberto,
-      'À vista: vencimento na data do movimento.',
-      NOW(), NOW()
-    );
-    RETURN NEW;
-  END IF;
-
-  -- (C) Entrada de adiantamento (condição 3) mas meio != adiantamento: gera liquidado
-  IF v_condicao_id = v_condicao_adiantamento AND v_meio_id IS DISTINCT FROM v_id_meio_adiant THEN
-    INSERT INTO public."contas_a_receber" (
-      "clienteId","movimentoId","dataVencimento","dataPagamento",
-      "valorOriginal","valorPago","statusId","observacoes",
-      "createdAt","updatedAt"
-    ) VALUES (
-      v_cliente_id, v_mov_id, v_data_evt, v_data_evt,
-      v_valor, v_valor, v_status_liquidado,
-      'Entrada de adiantamento: liquidado na data do movimento.',
-      NOW(), NOW()
-    );
-    RETURN NEW;
-  END IF;
-
-  -- (D) Outras condições parceladas: usa condicao_pagamento_parcelas
-  SELECT COUNT(*) INTO v_total_parcelas
-  FROM public.condicao_pagamento_parcelas
-  WHERE condicao_pagamento_id = v_condicao_id;
-
-  IF v_total_parcelas IS NULL OR v_total_parcelas = 0 THEN
-    -- Fallback: se não houver cadastro de parcelas, cria 1 título com vencimento = data_evt
-    INSERT INTO public."contas_a_receber" (
-      "clienteId","movimentoId","dataVencimento",
-      "valorOriginal","valorPago","statusId","observacoes",
-      "createdAt","updatedAt"
-    ) VALUES (
-      v_cliente_id, v_mov_id, v_data_evt,
-      v_valor, 0, v_status_aberto,
-      'Condição parcelada sem cadastro: gerado título único no vencimento base.',
-      NOW(), NOW()
-    );
-    RETURN NEW;
-  END IF;
-
-  -- Distribuição de valor por parcelas (sem perder centavos)
-  v_total_centavos     := (v_valor * 100)::INTEGER;
-  v_base_parcela_cent  := v_total_centavos / v_total_parcelas; -- divisão inteira (trunca)
-  v_resto_centavos     := v_total_centavos - (v_base_parcela_cent * v_total_parcelas);
-
-  FOR v_i IN 1..v_total_parcelas LOOP
-    -- Busca dias para pagamento da parcela v_i (ordenado por parcela_numero)
-    PERFORM 1;
-  END LOOP;
-
-  -- Insere parcelas respeitando a ordem e distribuindo o resto nos primeiros títulos
-  v_i := 0;
-  FOR v_i IN 1..v_total_parcelas LOOP
-    v_parcela_centavos := v_base_parcela_cent + CASE WHEN v_i <= v_resto_centavos THEN 1 ELSE 0 END;
-    v_parcela_valor    := (v_parcela_centavos::NUMERIC) / 100.0;
-
-    -- Pega os dias da parcela v_i
-    DECLARE
-      v_dias INTEGER;
-    BEGIN
-      SELECT dias_para_pagamento
-        INTO v_dias
-      FROM public.condicao_pagamento_parcelas
-      WHERE condicao_pagamento_id = v_condicao_id
-      ORDER BY parcela_numero
-      OFFSET (v_i - 1) LIMIT 1;
-
-      INSERT INTO public."contas_a_receber" (
-        "clienteId","movimentoId","dataVencimento",
-        "valorOriginal","valorPago","statusId","observacoes",
-        "createdAt","updatedAt"
-      ) VALUES (
-        v_cliente_id, v_mov_id, v_data_evt + (v_dias || ' days')::INTERVAL,
-        v_parcela_valor, 0, v_status_aberto,
-        'Parcela ' || v_i || ' de ' || v_total_parcelas,
-        NOW(), NOW()
-      );
-    END;
-  END LOOP;
-
-  RETURN NEW;
-END;
-$$;
-
-CREATE TRIGGER tr_gerar_titulos_contas_a_receber
-AFTER INSERT OR UPDATE OF "clienteId","valor","data_movimento","condicaoPagamentoId","meioPagamentoId","deletedAt","valorAbatidoAdiantamento"
-ON public.movimentos
-FOR EACH ROW
-EXECUTE FUNCTION public.fn_gerar_titulos_contas_a_receber(); `);
+    // Chamada única para criar todas as funções/triggers/views
+    await runDatabaseSetup();
 
     console.log(`🔥 Servidor rodando em http://localhost:${PORT}  B A S E  D E  T E S T E S`);
-
   } catch (error) {
     console.error('❌ Erro ao sincronizar com o banco:', error);
   }
