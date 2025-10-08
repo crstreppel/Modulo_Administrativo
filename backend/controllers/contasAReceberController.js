@@ -1,5 +1,8 @@
 // controllers/contasAReceberController.js
-// v2.2.1 — Fix liquidação à vista (usa saldo automático); mensagens mais claras; status IDs consistentes
+// v2.2.2 — Rollback oficial (modelo histórico preservado)
+// - Cancelamento mantém valorPago, dataPagamento e meioPagamentoId
+// - Apenas muda status para "Cancelado" e registra observação
+// - Mantém consistência contábil: financeiro ignora status 7/8 nas somas
 
 const { Op } = require('sequelize');
 const { sequelize } = require('../config/db');
@@ -11,13 +14,11 @@ const Status = require('../models/Status');
 
 const EPS = 0.01;
 
-// IDs de status (ajuste conforme tua tabela)
 const STATUS_IDS = {
   ABERTO: 2,
   LIQUIDADO: 5,
 };
 
-/** LISTAR */
 const listarContasAReceber = async (req, res) => {
   try {
     const { movimentoId } = req.query;
@@ -41,7 +42,6 @@ const listarContasAReceber = async (req, res) => {
   }
 };
 
-/** CRIAR MANUAL */
 const criarContaReceber = async (req, res) => {
   try {
     const {
@@ -88,7 +88,6 @@ const criarContaReceber = async (req, res) => {
   }
 };
 
-/** ATUALIZAR */
 const atualizarContaReceber = async (req, res) => {
   try {
     const { id } = req.params;
@@ -109,7 +108,6 @@ const atualizarContaReceber = async (req, res) => {
   }
 };
 
-/** EXCLUIR */
 const excluirContaReceber = async (req, res) => {
   try {
     const { id } = req.params;
@@ -124,7 +122,6 @@ const excluirContaReceber = async (req, res) => {
   }
 };
 
-/** LIQUIDAR */
 const liquidarContaReceber = async (req, res) => {
   const t = await sequelize.transaction();
   try {
@@ -148,7 +145,6 @@ const liquidarContaReceber = async (req, res) => {
       return res.status(404).json({ erro: 'Conta a receber não encontrada.' });
     }
 
-    // Bloqueio se já liquidado/cancelado/estornado
     const statusAtual = await Status.findByPk(conta.statusId).catch(() => null);
     if ([STATUS_IDS.LIQUIDADO].includes(conta.statusId)) {
       await t.rollback();
@@ -164,7 +160,7 @@ const liquidarContaReceber = async (req, res) => {
       return res.status(400).json({ erro: 'Título já está quitado.' });
     }
 
-    const bruto = Number(valorPago || saldo); // usa saldo se não veio do front
+    const bruto = Number(valorPago || saldo);
     const descNum = Number(desconto || 0);
     const acrNum = Number(acrescimo || 0);
     const efetivo = Math.max(0, (bruto - descNum) + acrNum);
@@ -224,7 +220,6 @@ function gerarObs(obsAnterior, { tipo, bruto, desconto, acrescimo, efetivo, data
   return obsAnterior ? `${obsAnterior} | ${p}` : p;
 }
 
-/** CANCELAR */
 const cancelarContaReceber = async (req, res) => {
   try {
     const { id } = req.params;
@@ -266,7 +261,6 @@ const cancelarContaReceber = async (req, res) => {
   }
 };
 
-/** PRORROGAR */
 const prorrogarContaReceber = async (req, res) => {
   try {
     const { id } = req.params;
