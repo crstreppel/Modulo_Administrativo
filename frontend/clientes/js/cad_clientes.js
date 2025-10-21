@@ -18,8 +18,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   async function listarClientes() {
     try {
-      const response = await axios.get('http://localhost:3000/api/clientes')
-
+      const response = await axios.get('http://localhost:3000/api/clientes');
       const clientes = response.data;
 
       listaClientesDiv.innerHTML = "";
@@ -32,7 +31,8 @@ document.addEventListener("DOMContentLoaded", async () => {
           <strong>${cliente.nome}</strong><br>
           ${cliente.telefone ? `Telefone: ${cliente.telefone}<br>` : ""}
           ${cliente.endereco ? `Endereço: ${cliente.endereco}, ${cliente.numero} ${cliente.complemento || ""} - ${cliente.bairro}<br>` : ""}
-          ${cliente.cidade ? `Cidade: ${cliente.cidade} - ${cliente.uf}` : ""}
+          ${cliente.cidade ? `Cidade: ${cliente.cidade} - ${cliente.uf}<br>` : ""}
+          ${cliente.dia_pagamento ? `<em>Dia de Pagamento: ${cliente.dia_pagamento}</em><br>` : ""}
         `;
 
         listaClientesDiv.appendChild(div);
@@ -45,6 +45,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
 
+    // 🔹 Captura todos os campos, incluindo o novo dia_pagamento
     const dados = {
       nome: form.nome.value,
       telefone: form.telefone.value,
@@ -59,7 +60,8 @@ document.addEventListener("DOMContentLoaded", async () => {
       pais: form.pais.value,
       complemento: form.complemento.value,
       cep: form.cep.value,
-      aceitaLembreteBanho: form.aceitaLembreteBanho.checked
+      aceitaLembreteBanho: form.aceitaLembreteBanho.checked,
+      dia_pagamento: form.dia_pagamento.value ? parseInt(form.dia_pagamento.value) : null
     };
 
     try {

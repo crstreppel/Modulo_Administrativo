@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Manutenção de Clientes</title>
+  <link rel="stylesheet" href="../../../css/global.css" />
+  <link rel="stylesheet" href="./css/manut_clientes.css" />
+</head>
+<body>
+  <main>
+    <h1>Manutenção de Clientes</h1>
+
+    <!-- 🔍 Campo de busca -->
+    <div id="filtro-clientes">
+      <input type="text" id="busca" placeholder="Buscar por nome ou telefone..." />
+      <button id="btn-buscar">Buscar</button>
+      <button id="btn-recarregar">Recarregar Lista</button>
+    </div>
+
+    <!-- 🧾 Listagem -->
+    <section id="lista-clientes"></section>
+
+    <!-- ✏️ Formulário de edição -->
+    <section id="edicao-cliente" class="oculto">
+      <h2>Edição de Cliente</h2>
+      <form id="form-edicao">
+        <label for="edit-nome">Nome*:</label>
+        <input type="text" id="edit-nome" name="nome" required />
+
+        <label for="edit-telefone">Telefone*:</label>
+        <input type="text" id="edit-telefone" name="telefone" required />
+
+        <label for="edit-email">Email:</label>
+        <input type="email" id="edit-email" name="email" />
+
+        <label for="edit-endereco">Endereço:</label>
+        <input type="text" id="edit-endereco" name="endereco" />
+
+        <label for="edit-numero">Número:</label>
+        <input type="text" id="edit-numero" name="numero" />
+
+        <label for="edit-bairro">Bairro:</label>
+        <input type="text" id="edit-bairro" name="bairro" />
+
+        <label for="edit-cidade">Cidade:</label>
+        <input type="text" id="edit-cidade" name="cidade" />
+
+        <label for="edit-uf">Estado:</label>
+        <input type="text" id="edit-uf" name="uf" />
+
+        <label for="edit-cep">CEP:</label>
+        <input type="text" id="edit-cep" name="cep" />
+
+        <label for="edit-dia_pagamento">Dia de Pagamento (1–31):</label>
+        <input type="number" id="edit-dia_pagamento" name="dia_pagamento" min="1" max="31" />
+
+        <button type="submit">Salvar Alterações</button>
+        <button type="button" id="btn-cancelar">Cancelar</button>
+      </form>
+    </section>
+
+    <section id="mensagem"></section>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+   <script src="./js/manut_clientes.js"></script>
+</body>
+</html>

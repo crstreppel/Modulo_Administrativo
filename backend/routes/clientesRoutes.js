@@ -1,10 +1,11 @@
 const express = require('express');
 const router = express.Router();
-const clientesController = require('../controllers/clientesController');
+const clienteController = require('../controllers/clientesController');
 
-router.post('/', clientesController.criar);
-router.get('/', clientesController.listar);
-router.put('/:id', clientesController.atualizar);
-router.delete('/:id', clientesController.excluir);
+router.post('/', clienteController.criar);
+router.get('/', clienteController.listar);
+router.get('/:id', clienteController.buscarPorId); // 🔹 Novo endpoint
+router.put('/:id', clienteController.atualizar);
+router.delete('/:id', clienteController.excluir);
 
 module.exports = router;

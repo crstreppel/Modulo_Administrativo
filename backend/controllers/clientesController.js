@@ -2,6 +2,9 @@ const Clientes = require('../models/Clientes');
 const Status = require('../models/Status');
 
 module.exports = {
+  // =============================================================
+  // CRIAR CLIENTE
+  // =============================================================
   async criar(req, res) {
     try {
       const {
@@ -17,6 +20,7 @@ module.exports = {
         clienteEsporadico,
         dataConversaoParaFixo,
         link_maps,
+        dia_pagamento, // 🔹 Novo campo (opcional)
       } = req.body;
 
       if (!nome || !telefone) {
@@ -39,7 +43,8 @@ module.exports = {
         clienteEsporadico: clienteEsporadico ?? false,
         dataConversaoParaFixo: dataConversaoParaFixo || null,
         link_maps: link_maps || '',
-        statusId: 1, // fixo sempre
+        dia_pagamento: dia_pagamento || null, // 🔹 Adicionado
+        statusId: 1,
       });
 
       const clienteComStatus = await Clientes.findByPk(cliente.id, {
@@ -53,6 +58,9 @@ module.exports = {
     }
   },
 
+  // =============================================================
+  // LISTAR TODOS OS CLIENTES
+  // =============================================================
   async listar(req, res) {
     try {
       const clientes = await Clientes.findAll({
@@ -67,6 +75,30 @@ module.exports = {
     }
   },
 
+  // =============================================================
+  // BUSCAR CLIENTE POR ID
+  // =============================================================
+  async buscarPorId(req, res) {
+    try {
+      const id = req.params.id;
+      const cliente = await Clientes.findByPk(id, {
+        include: [{ model: Status, as: 'status' }],
+      });
+
+      if (!cliente) {
+        return res.status(404).json({ erro: 'Cliente não encontrado.' });
+      }
+
+      return res.status(200).json(cliente);
+    } catch (erro) {
+      console.error('Erro ao buscar cliente por ID:', erro);
+      return res.status(500).json({ erro: 'Erro ao buscar cliente.', detalhe: erro.message });
+    }
+  },
+
+  // =============================================================
+  // ATUALIZAR CLIENTE
+  // =============================================================
   async atualizar(req, res) {
     try {
       const id = req.params.id;
@@ -90,6 +122,9 @@ module.exports = {
     }
   },
 
+  // =============================================================
+  // EXCLUIR CLIENTE
+  // =============================================================
   async excluir(req, res) {
     try {
       const id = req.params.id;

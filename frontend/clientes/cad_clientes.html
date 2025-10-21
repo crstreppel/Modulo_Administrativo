@@ -59,6 +59,21 @@
 
         <label for="cep">CEP:</label>
         <input type="text" id="cep" name="cep" />
+
+        <!-- =============================================================
+             Novo campo: Dia de Pagamento (para Pacotes de Banho)
+             ============================================================= -->
+        <label for="dia_pagamento" title="Dia fixo do mês para gerar vencimento automático em Contas a Receber. (1–31)">
+          Dia de Pagamento:
+        </label>
+        <input
+          type="number"
+          id="dia_pagamento"
+          name="dia_pagamento"
+          min="1"
+          max="31"
+          placeholder="1 a 31"
+        />
       </div>
 
       <button type="submit">Salvar</button>

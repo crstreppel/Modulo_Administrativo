@@ -1,3 +1,4 @@
+// backend/models/Clientes.js
 const { DataTypes } = require('sequelize');
 const { sequelize } = require('../config/db');
 const Status = require('./Status');
@@ -59,6 +60,22 @@ const Clientes = sequelize.define('Clientes', {
     type: DataTypes.BOOLEAN,
     defaultValue: false
   },
+
+  /**
+   * Dia fixo de pagamento definido pelo cliente (1–31)
+   * Usado pelo módulo "Pacotes de Banho – Dia de Vencimento Fixo"
+   * para gerar automaticamente títulos em contas_a_receber.
+   */
+  dia_pagamento: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+    validate: {
+      min: 1,
+      max: 31
+    },
+    comment: 'Dia fixo de vencimento para geração automática de títulos.'
+  },
+
   statusId: {
     type: DataTypes.INTEGER,
     defaultValue: 1,

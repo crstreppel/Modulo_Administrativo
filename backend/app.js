@@ -1,14 +1,71 @@
 /* =============================================================
- * Arquivo app.js • v4.0 - Padrão Bruxão Modular & Clean 🧙‍♂️
+ * Arquivo app.js • v4.2 - Padrão Bruxão Modular & Clean 🧙‍♂️
  * -------------------------------------------------------------
  * - Mantém estrutura original da versão 1
  * - Remove SQL inline (agora em utils/)
  * - Executa criação de funções, triggers e views automaticamente
  * - Ignora movimentos CANCELADO (7) e AJUSTE (8)
  * - Logs padronizados estilo Bruxão
+ * - Verificação automática anti-caos refinada (ignora libs e utilitários)
  * -------------------------------------------------------------
 */
 
+const fs = require('fs');
+const path = require('path');
+
+// =============================================================
+// 🔮 Verificador Bruxônico Anti-Caos v2.0
+// -------------------------------------------------------------
+// Bloqueia o servidor se detectar código de frontend (document/window)
+// em qualquer arquivo do backend, ignorando node_modules e utilitários.
+// =============================================================
+(function verificarFrontendNoBackend() {
+  const backendDir = path.join(__dirname);
+  const ignorarPastas = ['node_modules', 'config', 'utils', '.git'];
+  const ignorarArquivos = ['app.js', 'check_frontend_mistake.js'];
+
+  let erroDetectado = false;
+
+  function verificarArquivos(dir) {
+    const arquivos = fs.readdirSync(dir);
+
+    arquivos.forEach((arquivo) => {
+      const caminho = path.join(dir, arquivo);
+      const stat = fs.statSync(caminho);
+
+      // Ignora pastas e arquivos específicos
+      if (
+        ignorarPastas.some((p) => caminho.includes(p)) ||
+        ignorarArquivos.includes(arquivo)
+      ) {
+        return;
+      }
+
+      if (stat.isDirectory()) {
+        verificarArquivos(caminho);
+      } else if (arquivo.endsWith('.js')) {
+        const conteudo = fs.readFileSync(caminho, 'utf8');
+        if (conteudo.includes('document.') || conteudo.includes('window.')) {
+          console.log(`🚨 FRONTEND DETECTADO no backend: ${caminho}`);
+          erroDetectado = true;
+        }
+      }
+    });
+  }
+
+  verificarArquivos(backendDir);
+
+  if (erroDetectado) {
+    console.error('\n❌ Servidor abortado: Código de frontend detectado no backend!\n');
+    process.exit(1);
+  } else {
+    console.log('✅ Verificação Bruxônica: Backend limpo. Nenhum código de frontend detectado.\n');
+  }
+})();
+
+// =============================================================
+// Dependências principais
+// =============================================================
 const express = require('express');
 const cors = require('cors');
 const { sequelize } = require('./config/db'); // conexão direta
@@ -28,7 +85,9 @@ if (process.env.NODE_ENV === 'production' && FORCE_SYNC) {
 
 console.log(FORCE_SYNC ? '⚠️ Rodando com force:true' : '✅ Rodando sem force:true');
 
+// =============================================================
 // Rotas
+// =============================================================
 const statusRoutes = require('./routes/statusRoutes');
 const servicosRoutes = require('./routes/servicosRoutes');
 const racasRoutes = require('./routes/racasRoutes');
@@ -68,7 +127,9 @@ app.use('/api/tabela-de-precos', tabelaDePrecosRoutes);
 app.use('/api/movimentos', movimentosRoutes);
 app.use('/api/contas-a-receber', contasAReceberRoutes);
 
+// =============================================================
 // Inicializa servidor
+// =============================================================
 const PORT = 3000;
 
 app.listen(PORT, async () => {

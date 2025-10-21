@@ -1,15 +1,19 @@
 /* =============================================================
- * create_gerar_titulos.js • v1.0
+ * create_gerar_titulos.js • v2.0
  * -------------------------------------------------------------
  * - Cria função + trigger de geração de títulos (contas a receber)
+ * - Agora unifica regra de "vencimento fixo" (dia_pagamento do cliente)
+ * - Mantém suporte a adiantamentos, à vista e parcelado
  * - Ignora CANCELADO (7), AJUSTE (8) e deletedAt
  * -------------------------------------------------------------
-*/
+ * Autor: Claudião & Bruxão 🧙‍♂️
+ * Projeto: Petropolitan - Pacotes de Banho (Vencimento Fixo)
+ * ============================================================= */
 
 const { sequelize } = require('../../config/db');
 
 async function createGerarTitulos() {
-  console.log('⚙️ Criando função fn_gerar_titulos_contas_a_receber()...');
+  console.log('⚙️ Criando função fn_gerar_titulos_contas_a_receber() v2.0...');
 
   const sql = `
     DROP TRIGGER IF EXISTS tr_gerar_titulos_contas_a_receber ON public.movimentos;
@@ -20,12 +24,16 @@ async function createGerarTitulos() {
     LANGUAGE plpgsql
     AS $$
     DECLARE
+      -- ===== Constantes e variáveis principais =====
       v_status_aberto     INTEGER := 2;
       v_status_liquidado  INTEGER := 5;
       v_status_parcial    INTEGER := 3;
+      v_status_cancelado  INTEGER := 7;
+      v_status_ajuste     INTEGER := 8;
+
       v_condicao_avista       INTEGER := 1;
       v_condicao_adiantamento INTEGER := 3;
-      v_id_meio_adiant INTEGER;
+
       v_mov_id INTEGER := NEW."id";
       v_cliente_id INTEGER := NEW."clienteId";
       v_valor NUMERIC := NEW."valor";
@@ -33,6 +41,14 @@ async function createGerarTitulos() {
       v_data_evt DATE := NEW."data_movimento";
       v_condicao_id INTEGER := NEW."condicaoPagamentoId";
       v_meio_id INTEGER := NEW."meioPagamentoId";
+
+      v_id_meio_adiant INTEGER;
+      v_dia_pagamento INTEGER;
+      v_data_vencimento DATE;
+      v_ano INTEGER;
+      v_mes INTEGER;
+      v_dias_no_mes INTEGER;
+
       v_total_parcelas INTEGER;
       v_total_centavos INTEGER;
       v_base_parcela_cent INTEGER;
@@ -40,8 +56,12 @@ async function createGerarTitulos() {
       v_i INTEGER := 0;
       v_parcela_centavos INTEGER;
       v_parcela_valor NUMERIC(10,2);
+      v_dias INTEGER;
     BEGIN
-      IF NEW."statusId" IN (7,8) OR NEW."deletedAt" IS NOT NULL THEN
+      -- =============================================================
+      -- Ignora movimentos cancelados, ajustes ou excluídos
+      -- =============================================================
+      IF NEW."statusId" IN (v_status_cancelado, v_status_ajuste) OR NEW."deletedAt" IS NOT NULL THEN
         RETURN NEW;
       END IF;
 
@@ -49,13 +69,70 @@ async function createGerarTitulos() {
         RAISE EXCEPTION 'data_movimento não pode ser NULL (movimentoId=%).', v_mov_id;
       END IF;
 
+      -- =============================================================
+      -- Busca meio de pagamento de adiantamento
+      -- =============================================================
       SELECT id INTO v_id_meio_adiant
       FROM public.meio_de_pagamento
       WHERE descricao ILIKE 'adiant%'
       ORDER BY id
       LIMIT 1;
 
+      -- =============================================================
+      -- Remove títulos anteriores (reprocessamento seguro)
+      -- =============================================================
       DELETE FROM public."contas_a_receber" WHERE "movimentoId" = v_mov_id;
+
+      -- =============================================================
+      -- Verifica se o cliente tem dia_pagamento fixo
+      -- =============================================================
+      SELECT dia_pagamento INTO v_dia_pagamento
+      FROM public.clientes
+      WHERE id = v_cliente_id;
+
+      IF v_dia_pagamento IS NOT NULL THEN
+        -- =============================================================
+        -- Lógica de vencimento fixo (dia_pagamento)
+        -- =============================================================
+        v_ano := EXTRACT(YEAR FROM v_data_evt);
+        v_mes := EXTRACT(MONTH FROM v_data_evt);
+
+        -- Se o dia_pagamento for menor que o dia do movimento, empurra pro próximo mês
+        IF v_dia_pagamento < EXTRACT(DAY FROM v_data_evt) THEN
+          v_mes := v_mes + 1;
+          IF v_mes > 12 THEN
+            v_mes := 1;
+            v_ano := v_ano + 1;
+          END IF;
+        END IF;
+
+        -- Ajusta dias inválidos (ex: 31/02 -> 28/02)
+        SELECT EXTRACT(DAY FROM (DATE_TRUNC('MONTH', MAKE_DATE(v_ano, v_mes, 1)) + INTERVAL '1 MONTH - 1 day'))::INTEGER
+        INTO v_dias_no_mes;
+
+        IF v_dia_pagamento > v_dias_no_mes THEN
+          v_dia_pagamento := v_dias_no_mes;
+        END IF;
+
+        v_data_vencimento := MAKE_DATE(v_ano, v_mes, v_dia_pagamento);
+
+        INSERT INTO public."contas_a_receber" (
+          "clienteId","movimentoId","dataVencimento",
+          "valorOriginal","valorPago","statusId","observacoes",
+          "createdAt","updatedAt"
+        ) VALUES (
+          v_cliente_id, v_mov_id, v_data_vencimento,
+          v_valor, 0, v_status_aberto,
+          'Gerado automaticamente (vencimento fixo dia ' || v_dia_pagamento || ').',
+          NOW(), NOW()
+        );
+
+        RETURN NEW;
+      END IF;
+
+      -- =============================================================
+      -- Caso padrão: segue regra original (sem dia fixo)
+      -- =============================================================
 
       IF v_condicao_id = v_condicao_adiantamento AND v_meio_id = v_id_meio_adiant THEN
         IF v_valor_pago < v_valor THEN
@@ -127,25 +204,22 @@ async function createGerarTitulos() {
         v_parcela_centavos := v_base_parcela_cent + CASE WHEN v_i <= v_resto_centavos THEN 1 ELSE 0 END;
         v_parcela_valor := (v_parcela_centavos::NUMERIC) / 100.0;
 
-        DECLARE v_dias INTEGER;
-        BEGIN
-          SELECT dias_para_pagamento INTO v_dias
-          FROM public.condicao_pagamento_parcelas
-          WHERE condicao_pagamento_id = v_condicao_id
-          ORDER BY parcela_numero
-          OFFSET (v_i - 1) LIMIT 1;
+        SELECT dias_para_pagamento INTO v_dias
+        FROM public.condicao_pagamento_parcelas
+        WHERE condicao_pagamento_id = v_condicao_id
+        ORDER BY parcela_numero
+        OFFSET (v_i - 1) LIMIT 1;
 
-          INSERT INTO public."contas_a_receber" (
-            "clienteId","movimentoId","dataVencimento",
-            "valorOriginal","valorPago","statusId","observacoes",
-            "createdAt","updatedAt"
-          ) VALUES (
-            v_cliente_id, v_mov_id, v_data_evt + (v_dias || ' days')::INTERVAL,
-            v_parcela_valor, 0, v_status_aberto,
-            'Parcela ' || v_i || ' de ' || v_total_parcelas,
-            NOW(), NOW()
-          );
-        END;
+        INSERT INTO public."contas_a_receber" (
+          "clienteId","movimentoId","dataVencimento",
+          "valorOriginal","valorPago","statusId","observacoes",
+          "createdAt","updatedAt"
+        ) VALUES (
+          v_cliente_id, v_mov_id, v_data_evt + (v_dias || ' days')::INTERVAL,
+          v_parcela_valor, 0, v_status_aberto,
+          'Parcela ' || v_i || ' de ' || v_total_parcelas,
+          NOW(), NOW()
+        );
       END LOOP;
 
       RETURN NEW;
@@ -160,7 +234,7 @@ async function createGerarTitulos() {
   `;
 
   await sequelize.query(sql);
-  console.log('✅ Função fn_gerar_titulos_contas_a_receber() criada.');
+  console.log('✅ Função fn_gerar_titulos_contas_a_receber() v2.0 criada com sucesso.');
 }
 
 module.exports = { createGerarTitulos };
