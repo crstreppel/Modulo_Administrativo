@@ -12,6 +12,13 @@ const Adiantamentos = require('./Adiantamento');
 const ContasAReceber = require('./ContasAReceber');
 const CondicaoPagamentoParcelas = require('./CondicaoPagamentoParcelas'); // Importa o model novo
 
+// === Instanciação manual dos Models de Segurança (Padrão Bruxão V1) ===
+const { sequelize } = require('../config/db');
+const { DataTypes } = require('sequelize');
+
+const Role = require('./Role')(sequelize, DataTypes);
+const Usuario = require('./Usuario')(sequelize, DataTypes);
+const RefreshToken = require('./RefreshToken')(sequelize, DataTypes);
 
 /* ------------------------------------------------------------------
  * RELACIONAMENTOS COM STATUS
@@ -43,13 +50,11 @@ Status.hasMany(TabelaDePrecos, { foreignKey: 'statusId', as: 'tabelasDePreco' })
 Movimentos.belongsTo(Status, { foreignKey: 'statusId', as: 'status' });
 Status.hasMany(Movimentos, { foreignKey: 'statusId', as: 'movimentos' });
 
-
 /* ------------------------------------------------------------------
  * RELACIONAMENTO ESPECIE ↔ RAÇAS
  * ----------------------------------------------------------------*/
 Racas.belongsTo(Especie, { foreignKey: 'especieId', as: 'especie' });
 Especie.hasMany(Racas, { foreignKey: 'especieId', as: 'racas' });
-
 
 /* ------------------------------------------------------------------
  * RELACIONAMENTO PET ↔ CLIENTES, RAÇAS (sem ESPECIE)
@@ -59,7 +64,6 @@ Clientes.hasMany(Pets, { foreignKey: 'clienteId', as: 'pets' });
 
 Pets.belongsTo(Racas, { foreignKey: 'racaId', as: 'raca' });
 Racas.hasMany(Pets, { foreignKey: 'racaId', as: 'pets' });
-
 
 /* ------------------------------------------------------------------
  * RELACIONAMENTOS DA TABELA_DE_PRECOS
@@ -75,7 +79,6 @@ Racas.hasMany(TabelaDePrecos, { foreignKey: 'racaId', as: 'tabelasDePreco' });
 
 TabelaDePrecos.belongsTo(Pets, { foreignKey: 'petId', as: 'pet' });
 Pets.hasMany(TabelaDePrecos, { foreignKey: 'petId', as: 'tabelasDePreco' });
-
 
 /* ------------------------------------------------------------------
  * RELACIONAMENTOS DO MÓDULO MOVIMENTOS
@@ -101,13 +104,11 @@ TabelaDePrecos.hasMany(Movimentos, { foreignKey: 'tabelaDePrecosId', as: 'movime
 Movimentos.belongsTo(Adiantamentos, { foreignKey: 'adiantamentoId', as: 'adiantamento' });
 Adiantamentos.hasMany(Movimentos, { foreignKey: 'adiantamentoId', as: 'movimentos' });
 
-
 /* ------------------------------------------------------------------
  * RELACIONAMENTO ADIANTAMENTOS ↔ PETS (1:1)
  * ----------------------------------------------------------------*/
 Adiantamentos.belongsTo(Pets, { foreignKey: 'petId', as: 'pet' });
 Pets.hasOne(Adiantamentos, { foreignKey: 'petId', as: 'adiantamento' });
-
 
 /* ------------------------------------------------------------------
  * RELACIONAMENTO CONTAS_A_RECEBER
@@ -121,13 +122,20 @@ Movimentos.hasMany(ContasAReceber, { foreignKey: 'movimentoId', as: 'contasARece
 ContasAReceber.belongsTo(Status, { foreignKey: 'statusId', as: 'status' });
 Status.hasMany(ContasAReceber, { foreignKey: 'statusId', as: 'contasAReceber' });
 
-
 /* ------------------------------------------------------------------
  * RELACIONAMENTO CONDICAO_PAGAMENTO_PARCELAS
  * ----------------------------------------------------------------*/
 CondicaoPagamentoParcelas.belongsTo(CondicaoDePagamento, { foreignKey: 'condicaoPagamentoId', as: 'condicaoPagamento' });
 CondicaoDePagamento.hasMany(CondicaoPagamentoParcelas, { foreignKey: 'condicaoPagamentoId', as: 'parcelas' });
 
+/* ------------------------------------------------------------------
+ * SEGURANÇA: Usuario ↔ Role / RefreshToken
+ * ----------------------------------------------------------------*/
+Role.hasMany(Usuario, { foreignKey: { name: 'roleId', allowNull: false }, onDelete: 'RESTRICT' });
+Usuario.belongsTo(Role, { foreignKey: { name: 'roleId', allowNull: false }, as: 'role' });
+
+Usuario.hasMany(RefreshToken, { foreignKey: { name: 'usuarioId', allowNull: false }, onDelete: 'CASCADE', as: 'refreshTokens' });
+RefreshToken.belongsTo(Usuario, { foreignKey: { name: 'usuarioId', allowNull: false }, as: 'usuario' });
 
 /* ------------------------------------------------------------------
  * EXPORTS
@@ -146,4 +154,7 @@ module.exports = {
   Adiantamentos,
   ContasAReceber,
   CondicaoPagamentoParcelas,
+  Role,
+  Usuario,
+  RefreshToken,
 };
