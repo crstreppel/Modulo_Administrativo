@@ -31,7 +31,7 @@ router.post('/login', loginLimiter, login);
 router.post('/refresh', refresh);
 
 // Logout (token obrigatório)
-router.post('/logout', verifyAccessToken, logout);
+router.post('/logout', logout);
 
 /* ------------------------------------------------------------------
  * ADMIN

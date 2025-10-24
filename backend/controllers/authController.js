@@ -1,8 +1,7 @@
 // backend/controllers/authController.js
 // 🔒 Padrão Bruxão V1 – Autenticação JWT + Refresh Tokens (sem dotenv)
 // -------------------------------------------------------------
-// Ajustado para garantir carregamento das associações
-// antes de inicializar os models. 🧙‍♂️
+// Revisado para logar leitura de cookies e evitar falso "Token ausente"
 // -------------------------------------------------------------
 
 const bcrypt = require('bcryptjs');
@@ -117,8 +116,13 @@ async function login(req, res) {
 }
 
 async function refresh(req, res) {
+  console.log('🧙‍♂️ [DEBUG] Cookies recebidos:', req.cookies);
+
   const raw = req.cookies?.[authCfg.cookieName];
-  if (!raw) return res.status(401).json({ erro: 'Refresh ausente' });
+  if (!raw) {
+    console.warn('⚠️ [WARN] Nenhum refreshToken recebido no cookie.');
+    return res.status(401).json({ erro: 'Nenhum refreshToken recebido' });
+  }
 
   const tokenHash = crypto.createHash('sha256').update(raw).digest('hex');
   const reg = await RefreshToken.findOne({
@@ -132,9 +136,15 @@ async function refresh(req, res) {
     ],
   });
 
-  if (!reg) return res.status(401).json({ erro: 'Refresh inválido' });
-  if (dayjs().isAfter(dayjs(reg.expiresAt)))
+  if (!reg) {
+    console.warn('⚠️ [WARN] Refresh token não encontrado ou já revogado.');
+    return res.status(401).json({ erro: 'Refresh inválido' });
+  }
+
+  if (dayjs().isAfter(dayjs(reg.expiresAt))) {
+    console.warn('⚠️ [WARN] Refresh token expirado.');
     return res.status(401).json({ erro: 'Refresh expirado' });
+  }
 
   reg.revokedAt = new Date();
   await reg.save();
@@ -143,25 +153,38 @@ async function refresh(req, res) {
   const accessToken = signAccessToken(u);
   await issueRefreshToken(u, req, res);
 
+  console.log(`✅ [OK] Refresh token renovado para usuário ID ${u.id}`);
   return res.json({ accessToken });
 }
 
 async function logout(req, res) {
+  console.log('🧙‍♂️ [DEBUG] Cookies no logout:', req.cookies);
+
   const raw = req.cookies?.[authCfg.cookieName];
-  if (raw) {
-    const tokenHash = crypto.createHash('sha256').update(raw).digest('hex');
-    const reg = await RefreshToken.findOne({
-      where: { tokenHash, revokedAt: null },
-    });
-    if (reg) {
-      reg.revokedAt = new Date();
-      await reg.save();
-    }
+  if (!raw) {
+    console.warn('⚠️ [WARN] Nenhum cookie de refreshToken no logout.');
+    await clearRefreshCookie(res);
+    return res.status(400).json({ erro: 'Nenhum token de logout encontrado' });
   }
+
+  const tokenHash = crypto.createHash('sha256').update(raw).digest('hex');
+  const reg = await RefreshToken.findOne({ where: { tokenHash, revokedAt: null } });
+
+  if (reg) {
+    reg.revokedAt = new Date();
+    await reg.save();
+    console.log(`🧹 [LOGOUT] Token revogado para usuário ID ${reg.usuarioId}`);
+  } else {
+    console.warn('⚠️ [WARN] Nenhum token ativo encontrado para revogar.');
+  }
+
   await clearRefreshCookie(res);
   return res.json({ ok: true });
 }
 
+// -------------------------------------------------------------
+// 👥 Rotas auxiliares
+// -------------------------------------------------------------
 async function createUser(req, res) {
   const { nome, email, senha, roleNome = 'operador' } = req.body;
   if (!nome || !email || !senha)
