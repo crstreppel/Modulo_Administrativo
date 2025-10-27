@@ -1,10 +1,9 @@
 /* =============================================================
- * Arquivo app.js • v4.4 - Padrão Bruxão Modular & Clean 🧙‍♂️
+ * Arquivo app.js • v4.5.1 - Padrão Bruxão Modular & Clean 🧙‍♂️
  * -------------------------------------------------------------
  * - Mantém estrutura original da versão 1
- * - Acrescenta rotas de segurança (auth e usuários)
- * - Adiciona suporte a cookies (para refresh tokens)
- * - Mantém verificação anti-caos e logs padrão Bruxão
+ * - Serve o frontend pelo mesmo domínio
+ * - Ignora a pasta /frontend no verificador anti-caos
  * -------------------------------------------------------------
 */
 
@@ -12,11 +11,20 @@ const fs = require('fs');
 const path = require('path');
 
 // =============================================================
-// 🔮 Verificador Bruxônico Anti-Caos v2.0
+// 🔮 Verificador Bruxônico Anti-Caos v2.1 (compatível com frontend integrado)
 // =============================================================
 (function verificarFrontendNoBackend() {
   const backendDir = path.join(__dirname);
-  const ignorarPastas = ['node_modules', 'config', 'utils', '.git'];
+
+  // 🚫 PASTAS QUE NÃO DEVEM SER VERIFICADAS
+  const ignorarPastas = [
+    'node_modules',
+    'config',
+    'utils',
+    '.git',
+    'frontend' // ✅ agora o verificador ignora o frontend
+  ];
+
   const ignorarArquivos = ['app.js', 'check_frontend_mistake.js'];
 
   let erroDetectado = false;
@@ -99,19 +107,28 @@ const usuariosRoutes = require('./routes/usuariosRoutes');
 // Inicialização do app e middlewares globais
 // =============================================================
 const app = express();
-
-// Importa associações antes de inicializar o Sequelize
 require('./models/associations');
 
-// Configura middlewares
-app.use(cors({ origin: true, credentials: true }));
+// -------------------------------------------------------------
+// 🧩 Middlewares globais e CORS configurado para cookies
+// -------------------------------------------------------------
+app.use(cors({
+  origin: 'http://localhost:3000',
+  credentials: true
+}));
 app.use(express.json());
 app.use(cookieParser());
 
 // =============================================================
-// Rotas principais
+// 🌐 Servir Frontend Estático (pasta /frontend)
+// -------------------------------------------------------------
+const frontendPath = path.join(__dirname, 'frontend');
+app.use(express.static(frontendPath));
+
 // =============================================================
-app.get('/', (req, res) => {
+// Rotas principais (API)
+// =============================================================
+app.get('/api', (req, res) => {
   res.send('API do Módulo Administrativo está rodando. 🧩');
 });
 
@@ -133,6 +150,13 @@ app.use('/api/auth', authRoutes);
 app.use('/api/usuarios', usuariosRoutes);
 
 // =============================================================
+// 🔁 Redirecionamento padrão para dashboard
+// =============================================================
+app.get('/', (req, res) => {
+  res.sendFile(path.join(frontendPath, 'dashboard.html'));
+});
+
+// =============================================================
 // Inicialização do servidor
 // =============================================================
 const PORT = 3000;
@@ -146,6 +170,7 @@ app.listen(PORT, async () => {
     await runDatabaseSetup();
 
     console.log(`🔥 Servidor rodando em http://localhost:${PORT}  (BASE DE TESTES DEV)`);
+    console.log('🌍 Frontend disponível em http://localhost:3000/dashboard.html');
   } catch (error) {
     console.error('❌ Erro ao sincronizar com o banco:', error);
   }

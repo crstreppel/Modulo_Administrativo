@@ -1,0 +1,58 @@
+body {
+  margin: 0;
+  font-family: 'Segoe UI', sans-serif;
+  background-color: #f0f3f7;
+  color: #333;
+}
+
+header {
+  background-color: #0077ff;
+  color: white;
+  padding: 15px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+header h1 {
+  margin: 0;
+}
+
+#userInfo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+main {
+  display: flex;
+  height: calc(100vh - 60px);
+}
+
+aside {
+  width: 220px;
+  background: #fff;
+  padding: 15px;
+  box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+}
+
+aside ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+aside li {
+  margin-bottom: 10px;
+}
+
+aside a {
+  text-decoration: none;
+  color: #0077ff;
+  font-weight: bold;
+}
+
+#conteudo {
+  flex: 1;
+  padding: 30px;
+}

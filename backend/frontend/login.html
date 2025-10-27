@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login • Petropolitan</title>
+  <link rel="stylesheet" href="./css/global.css">
+  <link rel="stylesheet" href="./css/login.css">
+
+  <!-- Estilos PBQE v2.1 (animação leve para campo em erro) -->
+  <style>
+    .input-erro {
+      animation: pbqe-shake 0.35s ease;
+      border: 1.8px solid #d9534f !important;
+      box-shadow: 0 4px 12px rgba(217,83,79,0.12);
+    }
+    @keyframes pbqe-shake {
+      0% { transform: translateX(0); }
+      20% { transform: translateX(-6px); }
+      40% { transform: translateX(6px); }
+      60% { transform: translateX(-4px); }
+      80% { transform: translateX(4px); }
+      100% { transform: translateX(0); }
+    }
+    #msgErro {
+      min-height: 22px;
+      transition: opacity .2s;
+    }
+  </style>
+</head>
+<body>
+  <div class="login-container">
+    <h1>🐾 Petropolitan</h1>
+    <form id="loginForm" novalidate>
+      <label for="email">E-mail</label>
+      <input type="email" id="email" required placeholder="Digite seu e-mail">
+
+      <label for="senha">Senha</label>
+      <input type="password" id="senha" required placeholder="Digite sua senha">
+
+      <button type="submit" id="btnLogin">Entrar</button>
+      <p id="msgErro"></p>
+    </form>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  <script src="./js/login.js"></script>
+</body>
+</html>

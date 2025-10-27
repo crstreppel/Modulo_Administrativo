@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard • Petropolitan</title>
+  <link rel="stylesheet" href="./css/global.css">
+  <link rel="stylesheet" href="./css/dashboard.css">
+</head>
+<body>
+  <header>
+    <h1>🐾 Petropolitan</h1>
+    <div id="userInfo">
+      <span id="userName"></span>
+      <button id="btnLogout">Sair</button>
+    </div>
+  </header>
+
+  <main>
+    <aside>
+      <ul>
+        <li><a href="#">Clientes</a></li>
+        <li><a href="#">Pets</a></li>
+        <li><a href="#">Movimentos</a></li>
+        <li><a href="#">Tabela de Preços</a></li>
+        <li><a href="#">Contas a Receber</a></li>
+      </ul>
+    </aside>
+
+    <section id="conteudo">
+      <h2>Bem-vindo!</h2>
+      <p>Seu acesso está autenticado.</p>
+    </section>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  <script src="./js/utilsAuth.js"></script>
+  <script src="./js/dashboard.js"></script>
+</body>
+</html>

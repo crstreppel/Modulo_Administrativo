@@ -32,7 +32,7 @@ async function run() {
 
     // === Garante usuário admin ===
     const adminEmail = 'admin@petropolitan.pet';
-    const senhaPadrao = 'admin123'; // 🚨 Alterar depois em produção
+    const senhaPadrao = 'crs270172crs'; // 🚨 Alterar depois em produção
     const senhaHash = await bcrypt.hash(senhaPadrao, 12);
     const roleAdmin = await Role.findOne({ where: { nome: 'admin' } });
 

@@ -1,7 +1,8 @@
 // backend/controllers/authController.js
 // 🔒 Padrão Bruxão V1 – Autenticação JWT + Refresh Tokens (sem dotenv)
 // -------------------------------------------------------------
-// Revisado para logar leitura de cookies e evitar falso "Token ausente"
+// Versão PBQE v1.2 – Compatível com localhost (HTTP)
+// Adicionado: checkEmail(req, res) para verificação instantânea de e-mail
 // -------------------------------------------------------------
 
 const bcrypt = require('bcryptjs');
@@ -14,21 +15,18 @@ const { Usuario, Role, RefreshToken } = require('../models/associations');
 
 // -------------------------------------------------------------
 // ⚙️ Configuração direta (sem dotenv)
-// -------------------------------------------------------------
 const authCfg = {
   jwtAccessSecret: 'bruxao_secret_dev_2025',
   accessTokenTtlSec: 900, // 15 minutos
   refreshTokenTtlSec: 60 * 60 * 24 * 7, // 7 dias
   cookieName: 'refreshToken',
-  sameSite: 'lax',
-  cookieSecure: false,
+  sameSite: 'Lax', // ✅ Permite cookie local mesmo sem HTTPS
+  cookieSecure: false, // ✅ Em produção muda para true + HTTPS
   maxFailedLogins: 5,
   lockMinutes: 15,
 };
+// -------------------------------------------------------------
 
-// -------------------------------------------------------------
-// 🧩 Helpers
-// -------------------------------------------------------------
 function signAccessToken(u) {
   const payload = {
     sub: String(u.id),
@@ -57,19 +55,25 @@ async function issueRefreshToken(u, req, res) {
     expiresAt,
   });
 
+  // ✅ Compatível com localhost (HTTP)
   res.cookie(authCfg.cookieName, raw, {
     httpOnly: true,
     secure: authCfg.cookieSecure,
     sameSite: authCfg.sameSite,
     maxAge: authCfg.refreshTokenTtlSec * 1000,
-    path: '/api/auth',
   });
 
+  console.log(`🍪 [SET] Refresh token criado e enviado no cookie (${authCfg.sameSite}, secure=${authCfg.cookieSecure})`);
   return { jti, expiresAt };
 }
 
 async function clearRefreshCookie(res) {
-  res.clearCookie(authCfg.cookieName, { path: '/api/auth' });
+  res.clearCookie(authCfg.cookieName, {
+    httpOnly: true,
+    secure: authCfg.cookieSecure,
+    sameSite: authCfg.sameSite,
+  });
+  console.log('🧹 [COOKIE] Refresh cookie limpo do navegador.');
 }
 
 // -------------------------------------------------------------
@@ -188,9 +192,7 @@ async function logout(req, res) {
 async function createUser(req, res) {
   const { nome, email, senha, roleNome = 'operador' } = req.body;
   if (!nome || !email || !senha)
-    return res
-      .status(400)
-      .json({ erro: 'Campos obrigatórios: nome, email, senha' });
+    return res.status(400).json({ erro: 'Campos obrigatórios: nome, email, senha' });
 
   const existe = await Usuario.findOne({ where: { email } });
   if (existe) return res.status(409).json({ erro: 'Email já cadastrado' });
@@ -247,6 +249,25 @@ async function changePassword(req, res) {
   return res.json({ ok: true });
 }
 
+// -------------------------------------------------------------
+// ✅ Novo endpoint: Verificação rápida de e-mail (checkEmail)
+// -------------------------------------------------------------
+async function checkEmail(req, res) {
+  try {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ existe: false });
+
+    const existe = await Usuario.findOne({ where: { email } });
+    return res.json({ existe: !!existe });
+  } catch (err) {
+    console.error('⚠️ Erro em checkEmail:', err);
+    return res.status(500).json({ existe: false });
+  }
+}
+
+// -------------------------------------------------------------
+// Exporta
+// -------------------------------------------------------------
 module.exports = {
   login,
   refresh,
@@ -254,4 +275,5 @@ module.exports = {
   createUser,
   me,
   changePassword,
+  checkEmail, // <- adicionado para PBQE v2.1
 };

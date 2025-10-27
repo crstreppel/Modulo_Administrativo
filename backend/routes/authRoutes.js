@@ -7,7 +7,15 @@
 const express = require('express');
 const rateLimit = require('express-rate-limit');
 
-const { login, refresh, logout, createUser, me, changePassword } = require('../controllers/authController');
+const {
+  login,
+  refresh,
+  logout,
+  createUser,
+  me,
+  changePassword,
+  checkEmail, // import do novo endpoint
+} = require('../controllers/authController');
 const { verifyAccessToken, requireRole } = require('../middleware/auth');
 
 const router = express.Router();
@@ -32,6 +40,12 @@ router.post('/refresh', refresh);
 
 // Logout (token obrigatório)
 router.post('/logout', logout);
+
+/* ------------------------------------------------------------------
+ * CHECK EMAIL (PBQE v2.1)
+ * ----------------------------------------------------------------*/
+// Verificação rápida de e-mail existente (usado pelo frontend para UX)
+router.post('/check-email', checkEmail);
 
 /* ------------------------------------------------------------------
  * ADMIN
