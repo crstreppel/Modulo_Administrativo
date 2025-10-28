@@ -1,8 +1,9 @@
 // backend/controllers/authController.js
 // 🔒 Padrão Bruxão V1 – Autenticação JWT + Refresh Tokens (sem dotenv)
 // -------------------------------------------------------------
-// Versão PBQE v1.2 – Compatível com localhost (HTTP)
-// Adicionado: checkEmail(req, res) para verificação instantânea de e-mail
+// Versão PBQE v2.1 – Empatia com Segurança™
+// - Identifica email inválido ou senha incorreta separadamente
+// - Inclui verificação rápida de e-mail (checkEmail)
 // -------------------------------------------------------------
 
 const bcrypt = require('bcryptjs');
@@ -20,8 +21,8 @@ const authCfg = {
   accessTokenTtlSec: 900, // 15 minutos
   refreshTokenTtlSec: 60 * 60 * 24 * 7, // 7 dias
   cookieName: 'refreshToken',
-  sameSite: 'Lax', // ✅ Permite cookie local mesmo sem HTTPS
-  cookieSecure: false, // ✅ Em produção muda para true + HTTPS
+  sameSite: 'Lax',
+  cookieSecure: false,
   maxFailedLogins: 5,
   lockMinutes: 15,
 };
@@ -55,7 +56,6 @@ async function issueRefreshToken(u, req, res) {
     expiresAt,
   });
 
-  // ✅ Compatível com localhost (HTTP)
   res.cookie(authCfg.cookieName, raw, {
     httpOnly: true,
     secure: authCfg.cookieSecure,
@@ -63,7 +63,7 @@ async function issueRefreshToken(u, req, res) {
     maxAge: authCfg.refreshTokenTtlSec * 1000,
   });
 
-  console.log(`🍪 [SET] Refresh token criado e enviado no cookie (${authCfg.sameSite}, secure=${authCfg.cookieSecure})`);
+  console.log(`🍪 [SET] Refresh token criado (${authCfg.sameSite}, secure=${authCfg.cookieSecure})`);
   return { jti, expiresAt };
 }
 
@@ -73,26 +73,29 @@ async function clearRefreshCookie(res) {
     secure: authCfg.cookieSecure,
     sameSite: authCfg.sameSite,
   });
-  console.log('🧹 [COOKIE] Refresh cookie limpo do navegador.');
+  console.log('🧹 [COOKIE] Refresh cookie limpo.');
 }
 
 // -------------------------------------------------------------
-// 🔑 Rotas principais
+// 🔑 Login com mensagens diferenciadas (PBQE v2.1)
 // -------------------------------------------------------------
 async function login(req, res) {
   const { email, senha } = req.body;
   if (!email || !senha)
-    return res.status(400).json({ erro: 'Email e senha são obrigatórios' });
+    return res.status(400).json({ erro: 'campos_obrigatorios' });
 
   const u = await Usuario.findOne({
     where: { email },
     include: [{ model: Role, as: 'role' }],
   });
 
-  if (!u) return res.status(401).json({ erro: 'Credenciais inválidas' });
+  if (!u) {
+    console.log(`⚠️ Tentativa de login com email inexistente: ${email}`);
+    return res.status(401).json({ erro: 'email_invalido' });
+  }
 
   if (u.bloqueadoAte && dayjs().isBefore(dayjs(u.bloqueadoAte)))
-    return res.status(423).json({ erro: 'Usuário temporariamente bloqueado' });
+    return res.status(423).json({ erro: 'usuario_bloqueado' });
 
   const ok = await bcrypt.compare(senha, u.senhaHash);
   if (!ok) {
@@ -102,7 +105,8 @@ async function login(req, res) {
       u.tentativasFalhas = 0;
     }
     await u.save();
-    return res.status(401).json({ erro: 'Credenciais inválidas' });
+    console.log(`🚫 Senha incorreta para o email: ${email}`);
+    return res.status(401).json({ erro: 'senha_incorreta' });
   }
 
   u.tentativasFalhas = 0;
@@ -119,36 +123,23 @@ async function login(req, res) {
   });
 }
 
+// -------------------------------------------------------------
 async function refresh(req, res) {
-  console.log('🧙‍♂️ [DEBUG] Cookies recebidos:', req.cookies);
-
   const raw = req.cookies?.[authCfg.cookieName];
-  if (!raw) {
-    console.warn('⚠️ [WARN] Nenhum refreshToken recebido no cookie.');
+  if (!raw)
     return res.status(401).json({ erro: 'Nenhum refreshToken recebido' });
-  }
 
   const tokenHash = crypto.createHash('sha256').update(raw).digest('hex');
   const reg = await RefreshToken.findOne({
     where: { tokenHash, revokedAt: null },
-    include: [
-      {
-        model: Usuario,
-        as: 'usuario',
-        include: [{ model: Role, as: 'role' }],
-      },
-    ],
+    include: [{ model: Usuario, as: 'usuario', include: [{ model: Role, as: 'role' }] }],
   });
 
-  if (!reg) {
-    console.warn('⚠️ [WARN] Refresh token não encontrado ou já revogado.');
+  if (!reg)
     return res.status(401).json({ erro: 'Refresh inválido' });
-  }
 
-  if (dayjs().isAfter(dayjs(reg.expiresAt))) {
-    console.warn('⚠️ [WARN] Refresh token expirado.');
+  if (dayjs().isAfter(dayjs(reg.expiresAt)))
     return res.status(401).json({ erro: 'Refresh expirado' });
-  }
 
   reg.revokedAt = new Date();
   await reg.save();
@@ -157,18 +148,16 @@ async function refresh(req, res) {
   const accessToken = signAccessToken(u);
   await issueRefreshToken(u, req, res);
 
-  console.log(`✅ [OK] Refresh token renovado para usuário ID ${u.id}`);
+  console.log(`✅ Refresh token renovado para usuário ID ${u.id}`);
   return res.json({ accessToken });
 }
 
+// -------------------------------------------------------------
 async function logout(req, res) {
-  console.log('🧙‍♂️ [DEBUG] Cookies no logout:', req.cookies);
-
   const raw = req.cookies?.[authCfg.cookieName];
   if (!raw) {
-    console.warn('⚠️ [WARN] Nenhum cookie de refreshToken no logout.');
     await clearRefreshCookie(res);
-    return res.status(400).json({ erro: 'Nenhum token de logout encontrado' });
+    return res.status(400).json({ erro: 'Nenhum token encontrado' });
   }
 
   const tokenHash = crypto.createHash('sha256').update(raw).digest('hex');
@@ -177,9 +166,7 @@ async function logout(req, res) {
   if (reg) {
     reg.revokedAt = new Date();
     await reg.save();
-    console.log(`🧹 [LOGOUT] Token revogado para usuário ID ${reg.usuarioId}`);
-  } else {
-    console.warn('⚠️ [WARN] Nenhum token ativo encontrado para revogar.');
+    console.log(`🧹 Logout de usuário ID ${reg.usuarioId}`);
   }
 
   await clearRefreshCookie(res);
@@ -187,18 +174,16 @@ async function logout(req, res) {
 }
 
 // -------------------------------------------------------------
-// 👥 Rotas auxiliares
-// -------------------------------------------------------------
 async function createUser(req, res) {
   const { nome, email, senha, roleNome = 'operador' } = req.body;
   if (!nome || !email || !senha)
-    return res.status(400).json({ erro: 'Campos obrigatórios: nome, email, senha' });
+    return res.status(400).json({ erro: 'campos_obrigatorios' });
 
   const existe = await Usuario.findOne({ where: { email } });
-  if (existe) return res.status(409).json({ erro: 'Email já cadastrado' });
+  if (existe) return res.status(409).json({ erro: 'email_existente' });
 
   const role = await Role.findOne({ where: { nome: roleNome } });
-  if (!role) return res.status(400).json({ erro: 'Role inválida' });
+  if (!role) return res.status(400).json({ erro: 'role_invalida' });
 
   const senhaHash = await bcrypt.hash(senha, 12);
   const novo = await Usuario.create({
@@ -220,7 +205,7 @@ async function me(req, res) {
   const u = await Usuario.findByPk(req.user.id, {
     include: [{ model: Role, as: 'role' }],
   });
-  if (!u) return res.status(404).json({ erro: 'Usuário não encontrado' });
+  if (!u) return res.status(404).json({ erro: 'usuario_nao_encontrado' });
 
   return res.json({
     id: u.id,
@@ -234,13 +219,13 @@ async function me(req, res) {
 async function changePassword(req, res) {
   const { senhaAtual, novaSenha } = req.body;
   if (!senhaAtual || !novaSenha)
-    return res.status(400).json({ erro: 'Informe senhaAtual e novaSenha' });
+    return res.status(400).json({ erro: 'campos_obrigatorios' });
 
   const u = await Usuario.findByPk(req.user.id);
-  if (!u) return res.status(404).json({ erro: 'Usuário não encontrado' });
+  if (!u) return res.status(404).json({ erro: 'usuario_nao_encontrado' });
 
   const ok = await bcrypt.compare(senhaAtual, u.senhaHash);
-  if (!ok) return res.status(401).json({ erro: 'Senha atual incorreta' });
+  if (!ok) return res.status(401).json({ erro: 'senha_incorreta' });
 
   u.senhaHash = await bcrypt.hash(novaSenha, 12);
   u.precisaTrocarSenha = false;
@@ -250,7 +235,7 @@ async function changePassword(req, res) {
 }
 
 // -------------------------------------------------------------
-// ✅ Novo endpoint: Verificação rápida de e-mail (checkEmail)
+// ✅ Novo endpoint: checkEmail
 // -------------------------------------------------------------
 async function checkEmail(req, res) {
   try {
@@ -266,8 +251,6 @@ async function checkEmail(req, res) {
 }
 
 // -------------------------------------------------------------
-// Exporta
-// -------------------------------------------------------------
 module.exports = {
   login,
   refresh,
@@ -275,5 +258,5 @@ module.exports = {
   createUser,
   me,
   changePassword,
-  checkEmail, // <- adicionado para PBQE v2.1
+  checkEmail,
 };
