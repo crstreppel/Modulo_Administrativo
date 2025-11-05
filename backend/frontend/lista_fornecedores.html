@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Consulta de Fornecedores | Sistema Petropolitan</title>
+  <link rel="stylesheet" href="../css/global.css">
+  <link rel="stylesheet" href="./css/lista_fornecedores.css">
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+</head>
+
+<body>
+  <header>
+    <h1>Consulta de Fornecedores 📋</h1>
+  </header>
+
+  <main>
+    <section class="filters">
+      <input type="text" id="campoBusca" placeholder="🔍 Buscar fornecedor por nome, CNPJ ou e-mail...">
+      <button id="btnAtualizar">🔄 Atualizar</button>
+      <button id="btnVoltar">↩️ Voltar</button>
+    </section>
+
+    <section class="table-section">
+      <table id="tabelaFornecedores">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Nome Fantasia</th>
+            <th>CNPJ/CPF</th>
+            <th>Tipo</th>
+            <th>E-mail</th>
+            <th>Telefone</th>
+            <th>Ativo</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Linhas geradas via JS -->
+        </tbody>
+      </table>
+    </section>
+  </main>
+
+  <div id="loading" class="hidden">⏳ Carregando fornecedores...</div>
+
+  <script src="./js/lista_fornecedores.js"></script>
+</body>
+</html>

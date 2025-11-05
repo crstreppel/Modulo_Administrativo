@@ -1,3 +1,11 @@
+// =============================================================
+// PBQE-C™ v2.1 — Hub Global de Associações (somente módulos V1)
+// -------------------------------------------------------------
+// Mantém relacionamento entre os módulos legados da versão 1.
+// Os módulos migrados (ex.: Fornecedores) gerenciam suas
+// próprias associações dentro de /modules/<modulo>/
+// =============================================================
+
 const Servicos = require('./Servicos');
 const Status = require('./Status');
 const Racas = require('./Racas');
@@ -10,12 +18,10 @@ const TabelaDePrecos = require('./TabelaDePrecos');
 const Movimentos = require('./Movimentos');
 const Adiantamentos = require('./Adiantamento');
 const ContasAReceber = require('./ContasAReceber');
-const CondicaoPagamentoParcelas = require('./CondicaoPagamentoParcelas'); // Importa o model novo
+const CondicaoPagamentoParcelas = require('./CondicaoPagamentoParcelas');
 
-// === Instanciação manual dos Models de Segurança (Padrão Bruxão V1) ===
 const { sequelize } = require('../config/db');
 const { DataTypes } = require('sequelize');
-
 const Role = require('./Role')(sequelize, DataTypes);
 const Usuario = require('./Usuario')(sequelize, DataTypes);
 const RefreshToken = require('./RefreshToken')(sequelize, DataTypes);
@@ -57,7 +63,7 @@ Racas.belongsTo(Especie, { foreignKey: 'especieId', as: 'especie' });
 Especie.hasMany(Racas, { foreignKey: 'especieId', as: 'racas' });
 
 /* ------------------------------------------------------------------
- * RELACIONAMENTO PET ↔ CLIENTES, RAÇAS (sem ESPECIE)
+ * RELACIONAMENTO PET ↔ CLIENTES, RAÇAS
  * ----------------------------------------------------------------*/
 Pets.belongsTo(Clientes, { foreignKey: 'clienteId', as: 'cliente' });
 Clientes.hasMany(Pets, { foreignKey: 'clienteId', as: 'pets' });
@@ -138,7 +144,7 @@ Usuario.hasMany(RefreshToken, { foreignKey: { name: 'usuarioId', allowNull: fals
 RefreshToken.belongsTo(Usuario, { foreignKey: { name: 'usuarioId', allowNull: false }, as: 'usuario' });
 
 /* ------------------------------------------------------------------
- * EXPORTS
+ * EXPORTS (módulos legados)
  * ----------------------------------------------------------------*/
 module.exports = {
   Servicos,
@@ -158,3 +164,13 @@ module.exports = {
   Usuario,
   RefreshToken,
 };
+
+// =============================================================
+// PBQE-C™ v2.1 — Módulos independentes (exemplo)
+// -------------------------------------------------------------
+// Cada módulo modular aplica suas próprias associações via:
+// const { aplicarAssociacoesFornecedor } =
+//     require('../modules/fornecedores/fornecedorAssociations');
+// aplicarAssociacoesFornecedor();
+// =============================================================
+console.log('🔗 Associações V1 aplicadas (PBQE-C™ v2.1)');

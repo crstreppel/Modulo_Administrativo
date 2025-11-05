@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Cadastro de Fornecedores | Sistema Petropolitan</title>
+  <link rel="stylesheet" href="../css/global.css">
+  <link rel="stylesheet" href="./css/cad_fornecedor.css">
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+</head>
+
+<body>
+  <header>
+    <h1>Cadastro de Fornecedores 🧩</h1>
+  </header>
+
+  <main>
+    <section class="form-section">
+      <h2>Dados do Fornecedor</h2>
+      <form id="formFornecedor">
+
+        <div class="form-group">
+          <label for="tipoPessoa">Tipo de Pessoa</label>
+          <select id="tipoPessoa" required>
+            <option value="">Selecione...</option>
+            <option value="F">Física</option>
+            <option value="J">Jurídica</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="razaoSocial">Razão Social</label>
+          <input type="text" id="razaoSocial" maxlength="120" required>
+        </div>
+
+        <div class="form-group">
+          <label for="nomeFantasia">Nome Fantasia</label>
+          <input type="text" id="nomeFantasia" maxlength="120">
+        </div>
+
+        <div class="form-group">
+          <label for="cpfCnpj">CPF/CNPJ</label>
+          <input type="text" id="cpfCnpj" maxlength="18" required>
+        </div>
+
+        <div class="form-group">
+          <label for="inscricaoEstadual">Inscrição Estadual</label>
+          <input type="text" id="inscricaoEstadual" maxlength="20">
+        </div>
+
+        <div class="form-group">
+          <label for="emailPrincipal">E-mail Principal</label>
+          <input type="email" id="emailPrincipal">
+        </div>
+
+        <div class="form-group">
+          <label for="telefonePrincipal">Telefone Principal</label>
+          <input type="text" id="telefonePrincipal">
+        </div>
+
+        <div class="form-group">
+          <label for="tipoFornecedor">Tipo de Fornecedor</label>
+          <select id="tipoFornecedor" required>
+            <option value="">Selecione...</option>
+            <option value="Produto">Produto</option>
+            <option value="Serviço">Serviço</option>
+            <option value="Ambos">Ambos</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="scoreAtual">Score Atual</label>
+          <input type="number" id="scoreAtual" min="0" max="100">
+        </div>
+
+        <div class="form-group">
+          <label for="ativo">Ativo</label>
+          <select id="ativo">
+            <option value="true">Sim</option>
+            <option value="false">Não</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="observacoes">Observações</label>
+          <textarea id="observacoes" maxlength="300" rows="3"></textarea>
+        </div>
+
+        <div class="buttons">
+          <button type="submit" id="btnSalvar">Salvar</button>
+          <button type="button" id="btnLimpar">Limpar</button>
+          <button type="button" id="btnVoltar">Voltar</button>
+        </div>
+      </form>
+    </section>
+  </main>
+
+  <div id="loading" class="hidden">⏳ Enviando dados...</div>
+  <script src="./js/cad_fornecedor.js"></script>
+</body>
+</html>

@@ -2,39 +2,41 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Dashboard • Petropolitan</title>
-  <link rel="stylesheet" href="./css/global.css">
+  <title>Dashboard | Sistema Petropolitan V2</title>
+  <link rel="stylesheet" href="../../frontend/css/global.css">
   <link rel="stylesheet" href="./css/dashboard.css">
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
 </head>
+
 <body>
-  <header>
-    <h1>🐾 Petropolitan</h1>
-    <div id="userInfo">
-      <span id="userName"></span>
-      <button id="btnLogout">Sair</button>
-    </div>
+  <header class="topo">
+    <h1>🐾 Petropolitan | Dashboard V2</h1>
+    <button id="btnLogout">Sair</button>
   </header>
 
-  <main>
-    <aside>
+  <div class="container">
+    <!-- Menu lateral -->
+    <nav class="menu-lateral">
       <ul>
-        <li><a href="#">Clientes</a></li>
-        <li><a href="#">Pets</a></li>
-        <li><a href="#">Movimentos</a></li>
-        <li><a href="#">Tabela de Preços</a></li>
-        <li><a href="#">Contas a Receber</a></li>
+        <!-- PBQE-C™ v2.2 → caminho absoluto do módulo -->
+        <li data-modulo="/fornecedores/cad_fornecedor.html">📦 Cadastro de Fornecedores</li>
+        <li data-modulo="/fornecedores/ista_fornecedores.html">📋 Consulta de Fornecedores</li>
+        <li data-modulo="movimentos/cad_movimentos.html">💰 Movimentos (V1)</li>
+        <li data-modulo="clientes/cad_clientes.html">👥 Clientes (V1)</li>
       </ul>
-    </aside>
+    </nav>
 
-    <section id="conteudo">
-      <h2>Bem-vindo!</h2>
-      <p>Seu acesso está autenticado.</p>
-    </section>
-  </main>
+    <!-- Painel central -->
+    <main id="conteudo-principal">
+      <div class="mensagem-inicial">
+        <h2>Bem-vindo à Era PBQE V2 🪶</h2>
+        <p>Selecione um módulo no menu lateral para começar.</p>
+      </div>
+    </main>
+  </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
-  <script src="./js/utilsAuth.js"></script>
-  <script src="./js/dashboard.js"></script>
+  <div id="loading" class="hidden">⏳ Carregando módulo...</div>
+
+  <script src="./js/dashboard_loader.js"></script>
 </body>
 </html>

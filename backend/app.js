@@ -1,32 +1,26 @@
 /* =============================================================
- * Arquivo app.js • v4.5.1 - Padrão Bruxão Modular & Clean 🧙‍♂️
+ * Arquivo app.js • v4.5.6 - Padrão Bruxão Modular & Clean 🧙‍♂️
  * -------------------------------------------------------------
  * - Mantém estrutura original da versão 1
- * - Serve o frontend pelo mesmo domínio
- * - Ignora a pasta /frontend no verificador anti-caos
- * -------------------------------------------------------------
-*/
+ * - Integração modular unificada para Fornecedores
+ * - Rotas estáticas corrigidas (frontend global + módulos)
+ * ============================================================= */
 
 const fs = require('fs');
 const path = require('path');
+const express = require('express');
+const cors = require('cors');
+const cookieParser = require('cookie-parser');
+const { sequelize } = require('./config/db');
+const { runDatabaseSetup } = require('./utils');
 
 // =============================================================
-// 🔮 Verificador Bruxônico Anti-Caos v2.1 (compatível com frontend integrado)
+// 🔮 Verificador Bruxônico Anti-Caos v2.1
 // =============================================================
 (function verificarFrontendNoBackend() {
   const backendDir = path.join(__dirname);
-
-  // 🚫 PASTAS QUE NÃO DEVEM SER VERIFICADAS
-  const ignorarPastas = [
-    'node_modules',
-    'config',
-    'utils',
-    '.git',
-    'frontend' // ✅ agora o verificador ignora o frontend
-  ];
-
+  const ignorarPastas = ['node_modules', 'config', 'utils', '.git', 'frontend'];
   const ignorarArquivos = ['app.js', 'check_frontend_mistake.js'];
-
   let erroDetectado = false;
 
   function verificarArquivos(dir) {
@@ -35,10 +29,7 @@ const path = require('path');
       const caminho = path.join(dir, arquivo);
       const stat = fs.statSync(caminho);
 
-      if (
-        ignorarPastas.some((p) => caminho.includes(p)) ||
-        ignorarArquivos.includes(arquivo)
-      ) return;
+      if (ignorarPastas.some((p) => caminho.includes(p)) || ignorarArquivos.includes(arquivo)) return;
 
       if (stat.isDirectory()) {
         verificarArquivos(caminho);
@@ -63,25 +54,13 @@ const path = require('path');
 })();
 
 // =============================================================
-// Dependências principais
-// =============================================================
-const express = require('express');
-const cors = require('cors');
-const cookieParser = require('cookie-parser');
-const { sequelize } = require('./config/db');
-const { runDatabaseSetup } = require('./utils');
-
-// =============================================================
 // ⚙️ Configuração do modo de sincronização
 // =============================================================
-const FORCE_SYNC =
-  process.argv.includes('--force') || process.env.FORCE_SYNC === '1';
-
+const FORCE_SYNC = process.argv.includes('--force') || process.env.FORCE_SYNC === '1';
 if (process.env.NODE_ENV === 'production' && FORCE_SYNC) {
   console.error('🚫 Bloqueado: force:true em produção.');
   process.exit(1);
 }
-
 console.log(FORCE_SYNC ? '⚠️ Rodando com force:true' : '✅ Rodando sem force:true');
 
 // =============================================================
@@ -98,10 +77,9 @@ const petsRoutes = require('./routes/petsRoutes');
 const tabelaDePrecosRoutes = require('./routes/tabelaDePrecosRoutes');
 const movimentosRoutes = require('./routes/movimentosRoutes');
 const contasAReceberRoutes = require('./routes/contasAReceberRoutes');
-
-// === Novas rotas de segurança (V2 → V1) ===
 const authRoutes = require('./routes/authRoutes');
 const usuariosRoutes = require('./routes/usuariosRoutes');
+const fornecedoresRoutes = require('./modules/fornecedores/fornecedorRoutes');
 
 // =============================================================
 // Inicialização do app e middlewares globais
@@ -109,21 +87,26 @@ const usuariosRoutes = require('./routes/usuariosRoutes');
 const app = express();
 require('./models/associations');
 
-// -------------------------------------------------------------
-// 🧩 Middlewares globais e CORS configurado para cookies
-// -------------------------------------------------------------
 app.use(cors({
-  origin: 'http://localhost:3000',
+  origin: ['http://localhost:3000', 'http://127.0.0.1:5500'],
   credentials: true
 }));
 app.use(express.json());
 app.use(cookieParser());
 
 // =============================================================
-// 🌐 Servir Frontend Estático (pasta /frontend)
-// -------------------------------------------------------------
+// 🌐 Servir Frontend Estático (global e modular)
+// =============================================================
+
+// --- Frontend global (permite acessar /frontend/css/... etc.)
 const frontendPath = path.join(__dirname, 'frontend');
-app.use(express.static(frontendPath));
+app.use('/frontend', express.static(frontendPath));
+app.use(express.static(frontendPath)); // mantém compatibilidade com v1
+
+// --- Módulo Fornecedores (rota completa com frontend incluído)
+const fornecedoresPath = path.join(__dirname, 'modules', 'fornecedores');
+app.use('/modules/fornecedores', express.static(fornecedoresPath));
+app.use('/modules/fornecedores/frontend', express.static(path.join(fornecedoresPath, 'frontend')));
 
 // =============================================================
 // Rotas principais (API)
@@ -132,7 +115,6 @@ app.get('/api', (req, res) => {
   res.send('API do Módulo Administrativo está rodando. 🧩');
 });
 
-// Rotas administrativas
 app.use('/api/status', statusRoutes);
 app.use('/api/servicos', servicosRoutes);
 app.use('/api/racas', racasRoutes);
@@ -145,7 +127,10 @@ app.use('/api/tabela-de-precos', tabelaDePrecosRoutes);
 app.use('/api/movimentos', movimentosRoutes);
 app.use('/api/contas-a-receber', contasAReceberRoutes);
 
-// Rotas de segurança
+// --- Módulo Fornecedores (API)
+app.use('/api/fornecedores', fornecedoresRoutes);
+
+// --- Rotas de segurança
 app.use('/api/auth', authRoutes);
 app.use('/api/usuarios', usuariosRoutes);
 
@@ -157,7 +142,7 @@ app.get('/', (req, res) => {
 });
 
 // =============================================================
-// Inicialização do servidor
+// 🚀 Inicialização do servidor
 // =============================================================
 const PORT = 3000;
 
@@ -165,10 +150,7 @@ app.listen(PORT, async () => {
   try {
     await sequelize.sync({ force: FORCE_SYNC, logging: false });
     console.log('🧠 Sequelize sincronizado com sucesso.');
-
-    // Executa setup de funções/triggers/views
     await runDatabaseSetup();
-
     console.log(`🔥 Servidor rodando em http://localhost:${PORT}  (BASE DE TESTES DEV)`);
     console.log('🌍 Frontend disponível em http://localhost:3000/dashboard.html');
   } catch (error) {
